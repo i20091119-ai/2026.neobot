@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>네오봇 블록코딩</title>
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  body{height:100vh;overflow:hidden;display:flex;flex-direction:column;background:#f6f3ee}
+  .topbar{background:#1fb5ad;color:#fff}
+  .topbar a{color:#fff;font-weight:700}
+  .topbar .title{font-size:1.15rem;font-weight:700}
+  .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .runbtn{background:#3bb34a;font-size:1.05rem;padding:9px 18px}
+  .stopbtn{background:#e5484d;font-size:1.05rem;padding:9px 18px}
+  .runbtn.on{box-shadow:0 0 0 4px rgba(255,255,255,.6)}
+  .topbar .btn.ghost{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4);padding:8px 12px;font-size:.9rem}
+  .main{flex:1;min-height:0;display:flex}
+  #blocklyDiv{flex:1;min-width:0;height:100%}
+  .side{width:280px;flex-shrink:0;background:#fff;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:10px;padding:12px;overflow:auto}
+  .side h3{margin:4px 0;font-size:1rem}
+  .sgrid{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-variant-numeric:tabular-nums}
+  .sgrid span{color:var(--mut)}
+  .sgrid b{text-align:right}
+  .outbox{background:#fbf8f3;border:2px solid var(--line);border-radius:12px;padding:8px 10px;min-height:120px;max-height:260px;overflow:auto;font-size:.95rem;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+  .outnow{font-size:1.6rem;font-weight:700;text-align:center;padding:8px;border-radius:12px;background:#e9fbf4;min-height:2.2em;word-break:break-all}
+  .outvals{font-size:.8rem;color:var(--mut)}
+  .hint{font-size:.8rem;color:var(--mut);line-height:1.5}
+  .conn{box-shadow:none}
+  .blocklyTreeLabel,.blocklyToolboxCategoryLabel{font-family:'Esamanru','Malgun Gothic',sans-serif!important}
+  @media (max-width:800px){.side{display:none}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="tools">
+      <a href="index.html">← 처음으로</a>
+      <span class="title">네오봇 블록코딩</span>
+    </div>
+    <div class="tools">
+      <button class="btn runbtn" id="runBtn">▶ 시작하기</button>
+      <button class="btn stopbtn" id="stopBtn">■ 정지</button>
+      <button class="btn ghost" id="newBtn">새로 만들기</button>
+      <button class="btn ghost" id="saveBtn">파일로 저장</button>
+      <button class="btn ghost" id="loadBtn">불러오기</button>
+      <input type="file" id="fileIn" accept=".json,.neobot" class="hidden" />
+      <button class="conn" id="nbConn">🔌 로봇 연결</button>
+    </div>
+  </div>
+  <div class="main">
+    <div id="blocklyDiv"></div>
+    <div class="side">
+      <h3>센서값</h3>
+      <div class="sgrid">
+        <span>IN1</span><b id="sIN1">-</b>
+        <span>IN2</span><b id="sIN2">-</b>
+        <span>IN3</span><b id="sIN3">-</b>
+        <span>리모컨(IR)</span><b id="sIR">-</b>
+        <span>배터리</span><b id="sBAT">-</b>
+      </div>
+      <h3>화면 표시</h3>
+      <div class="outnow" id="outNow"></div>
+      <div class="outbox" id="outLog"></div>
+      <button class="btn ghost" id="clearOut" style="font-size:.85rem;padding:6px">지우기</button>
+      <div class="hint">
+        • 블록은 왼쪽 분류에서 끌어와요<br>
+        • ▶ 시작하기 블록 아래에 붙여야 실행돼요<br>
+        • 작업은 이 PC 브라우저에 자동 저장돼요<br>
+        • 다른 PC로 옮길 땐 '파일로 저장'
+      </div>
+      <details><summary class="hint">만들어진 코드 보기</summary><pre id="codeView" style="font-size:.7rem;white-space:pre-wrap"></pre></details>
+    </div>
+  </div>
+
+<script src="vendor/blockly/blockly_compressed.js"></script>
+<script src="vendor/blockly/blocks_compressed.js"></script>
+<script src="vendor/blockly/javascript_compressed.js"></script>
+<script src="vendor/blockly/msg/ko.js"></script>
+<script src="js/neobot.js"></script>
+<script src="js/blocks-def.js"></script>
+<script src="js/blocks-run.js"></script>
+<script>
+'use strict';
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const SAVE_KEY = 'neobot-blocks-v1';
+
+  const theme = Blockly.Theme.defineTheme('neobot', {
+    base: Blockly.Themes.Classic,
+    fontStyle: { family: "'Esamanru','Malgun Gothic',sans-serif", weight: '500', size: 12 },
+    componentStyles: { workspaceBackgroundColour: '#fbfaf7', toolboxBackgroundColour: '#ffffff', flyoutBackgroundColour: '#eef7f6', flyoutOpacity: 1 },
+  });
+
+  const ws = Blockly.inject('blocklyDiv', {
+    toolbox: window.NB_TOOLBOX,
+    media: 'vendor/blockly/media/',
+    theme,
+    renderer: 'zelos',
+    trashcan: true,
+    zoom: { controls: true, wheel: true, startScale: 0.85, maxScale: 2, minScale: 0.4 },
+    grid: { spacing: 24, length: 2, colour: '#e8e2d8', snap: true },
+    move: { scrollbars: true, drag: true, wheel: false },
+  });
+
+  const DEFAULT = { blocks: { languageVersion: 0, blocks: [{
+    type: 'nb_when_run', x: 40, y: 40,
+    next: { block: { type: 'nb_robot', fields: { MOVE: '1' },
+    next: { block: { type: 'nb_wait_secs', inputs: { SECS: { shadow: { type: 'math_number', fields: { NUM: 1 } } } },
+    next: { block: { type: 'nb_robot', fields: { MOVE: '5' },
+    next: { block: { type: 'nb_play_note', fields: { NOTE: '1', OCTAVE: '2', LEN: '4' } } } } } } } } },
+  }] } };
+
+  function loadState(obj) {
+    ws.clear();
+    try { Blockly.serialization.workspaces.load(obj, ws); }
+    catch (e) { console.warn(e); Blockly.serialization.workspaces.load(DEFAULT, ws); }
+  }
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) {}
+  loadState(saved || DEFAULT);
+
+  let saveT = null;
+  ws.addChangeListener((e) => {
+    if (e.isUiEvent) return;
+    clearTimeout(saveT);
+    saveT = setTimeout(() => {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(Blockly.serialization.workspaces.save(ws))); } catch (err) {}
+      if ($('codeView').parentElement.open) $('codeView').textContent = NBRunner.codePreview();
+    }, 400);
+  });
+  $('codeView').parentElement.addEventListener('toggle', () => { $('codeView').textContent = NBRunner.codePreview(); });
+
+  // 화면 표시
+  function show(t) {
+    $('outNow').textContent = t;
+    const log = $('outLog');
+    log.textContent += t + '\n';
+    if (log.textContent.length > 5000) log.textContent = log.textContent.slice(-4000);
+    log.scrollTop = log.scrollHeight;
+  }
+  $('clearOut').onclick = () => { $('outLog').textContent = ''; $('outNow').textContent = ''; };
+
+  NBRunner.init(ws, {
+    onState: (on) => { $('runBtn').classList.toggle('on', on); $('runBtn').textContent = on ? '▶ 실행 중…' : '▶ 시작하기'; },
+    onShow: show,
+  });
+  $('runBtn').onclick = () => {
+    if (!Neobot.connected) show('⚠ 로봇이 연결되지 않았어요. 블록은 실행되지만 로봇은 움직이지 않아요.');
+    NBRunner.start();
+  };
+  $('stopBtn').onclick = () => NBRunner.stop();
+
+  $('newBtn').onclick = () => {
+    if (!confirm('지금 블록을 모두 지우고 새로 만들까요?\n(필요하면 먼저 파일로 저장하세요)')) return;
+    NBRunner.stop(); loadState({ blocks: { languageVersion: 0, blocks: [{ type: 'nb_when_run', x: 40, y: 40 }] } });
+  };
+  $('saveBtn').onclick = () => {
+    const data = JSON.stringify(Blockly.serialization.workspaces.save(ws), null, 1);
+    const name = (prompt('파일 이름', '네오봇작품') || '네오봇작품').replace(/[\\/:*?"<>|]/g, '_');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = name + '.neobot.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  $('loadBtn').onclick = () => $('fileIn').click();
+  $('fileIn').onchange = async () => {
+    const f = $('fileIn').files[0]; if (!f) return;
+    try { NBRunner.stop(); loadState(JSON.parse(await f.text())); }
+    catch (e) { alert('파일을 열 수 없어요: ' + e.message); }
+    $('fileIn').value = '';
+  };
+
+  // 센서 표시
+  Neobot.mountConnectButton($('nbConn'));
+  Neobot.on('sensor', (s) => { for (const k of ['IN1', 'IN2', 'IN3', 'IR', 'BAT']) $('s' + k).textContent = s[k]; });
+
+  window.addEventListener('resize', () => Blockly.svgResize(ws));
+  window.__ws = ws;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>네오봇 수학SW체험</title>
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  body{background:linear-gradient(rgba(255,247,234,.6),rgba(255,247,234,.6)),url('assets/bg.png') center/cover no-repeat,var(--cream);min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px}
+  h1{font-size:2.2rem;margin:0}
+  .sub{color:var(--mut);margin:0}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;width:min(900px,100%)}
+  .card{background:#fff;border:3px solid var(--line);border-radius:28px;padding:26px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;box-shadow:var(--shadow);transition:.15s}
+  .card:hover{transform:translateY(-3px)}
+  .card img{height:110px;display:block;margin:0 auto 10px}
+  .card h2{margin:6px 0;font-size:1.5rem}
+  .card p{margin:0;color:var(--mut);line-height:1.5}
+  .c1{border-color:#ffe0a3}.c2{border-color:#b9ecdc}
+  .tag{display:inline-block;font-size:.8rem;border-radius:999px;padding:3px 10px;background:#fff3e0;color:#a86400}
+  .c2 .tag{background:#e9fbf4;color:#1b8f6a}
+  .help{font-size:.85rem;color:var(--mut);text-align:center;line-height:1.6}
+  .warnbox{background:#fff3e0;border:2px solid #ffe0a3;border-radius:14px;padding:10px 14px;font-size:.9rem}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <img src="assets/gnmc-logo.png" alt="" style="height:34px" onerror="this.remove()" />
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="sensors" id="sens"></span>
+      <button class="conn" id="nbConn">🔌 로봇 연결</button>
+    </div>
+  </div>
+  <main>
+    <div style="text-align:center">
+      <h1>네오봇 수학SW체험</h1>
+      <p class="sub">무엇을 해 볼까요?</p>
+    </div>
+    <div id="noSerial" class="warnbox hidden">이 브라우저는 로봇 연결(Web Serial)을 지원하지 않습니다. <b>크롬</b> 또는 <b>엣지</b>로 열어 주세요.</div>
+    <div class="cards">
+      <button class="card c1" onclick="location.href='drive.html'">
+        <img src="assets/energy.png" alt="" />
+        <span class="tag">직접 운전</span>
+        <h2>수학 에너지 주행</h2>
+        <p>문제를 풀어 <b>에너지</b>를 채우고 운전해요. 달릴수록 에너지가 줄어요. 코인을 모아 <b>속도업</b>!</p>
+      </button>
+      <button class="card c2" onclick="location.href='blocks.html'">
+        <img src="assets/mascot-happy.png" alt="" />
+        <span class="tag">블록코딩</span>
+        <h2>네오봇 블록코딩</h2>
+        <p>엔트리처럼 블록을 쌓아 모터·소리·LED·서보·센서를 프로그래밍해요.</p>
+      </button>
+    </div>
+    <p class="help">
+      연결 방법: 동글을 PC에 꽂기 → 로봇 전원 켜기(① Coding 모드) → <b>로봇 연결</b> → 'CP210x' 포트 선택<br>
+      엔트리 하드웨어 연결 프로그램이 켜져 있으면 포트를 쓸 수 없어요. 먼저 종료하세요.<br>
+      로봇이 반응이 없으면 → <a href="test.html">연결 점검</a>
+    </p>
+  </main>
+<script src="js/neobot.js"></script>
+<script>
+  if (!('serial' in navigator)) document.getElementById('noSerial').classList.remove('hidden');
+  Neobot.mountConnectButton(document.getElementById('nbConn'));
+  Neobot.on('sensor', s => {
+    document.getElementById('sens').innerHTML = `배터리 <b>${s.BAT}</b>`;
+  });
+</script>
+</body>
+</html>

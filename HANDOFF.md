@@ -1,0 +1,107 @@
+# 인수인계 — 네오봇 수학SW체험 웹앱 (2026.neobot)
+
+작성 2026.10.1. / Cowork 세션 → Claude Code 이관
+
+## 1. 목적
+- 구형 네오봇에듀(녹색 컨트롤러, 블루투스 동글)를 **엔트리 없이** 웹페이지에서 조종
+- 용도: 경남수학문화관 「2026. 학교로 찾아가는 SW체험수업」 ② 조립하고 코딩하는 네오봇 정다각형 주행
+  - 운영: 10.27.(화) 월포초 4학급, 11.17.(화) 창원동중 2학급
+  - 80분(2차시), 2인 1모둠, 학생이 직접 조립, 해설사 2명 진행, 학교 노트북 사용
+- 결정 사항: **배포는 웹 주소(GitHub Pages)**. exe 포장은 보류(서명 없는 exe 경고, 드라이버는 어차피 필요, 수정 반영 불편)
+
+## 2. 현재 상태
+| 항목 | 상태 |
+|---|---|
+| 수학 에너지 주행 (`drive.html`) | 실물 로봇 동작 확인 |
+| 네오봇 블록코딩 (`blocks.html`) | 실물 로봇 동작 확인 |
+| 연결 점검 (`test.html`) | 완료 |
+| 서보 '각도 바꾸기' 속도 선택지 | 엔트리와 반대였던 버그 수정 완료(실물 미확인, 키트에 서보 없음) |
+| GitHub 저장소 | `https://github.com/i20091119-ai/2026.neobot` — **비어 있음**. Cowork 세션 권한 없어 push 실패(403) |
+| GitHub Pages | 미설정 |
+| 폴더판(오프라인용) | `C:\Users\PC\Desktop\네오봇\네오봇 수학SW체험\` (+ zip) — Run.bat로 엣지 앱 창 실행 |
+
+## 3. 바로 할 일
+1. 이 폴더를 저장소 루트로 `git init` → `main` 브랜치 → push
+2. GitHub Pages 켜기(Settings → Pages → main / root) → 주소 확인
+3. Pages 주소에서 로봇 연결·주행·블록 실행 재확인(https에서 Web Serial 정상 여부)
+4. 활동지용 짧은 주소·QR 준비
+5. (선택) '정다각형 미션' 화면 추가 — 아래 6절
+
+## 4. 파일 구조
+```
+index.html        처음 화면(두 활동 카드, 로봇 연결, 연결 점검 링크)
+drive.html        수학 에너지 주행 화면
+blocks.html       블록코딩 화면(Blockly 주입, 센서 패널, 화면 표시, 저장/불러오기)
+test.html         연결 점검(송수신 카운트, 시험 동작, DTR/RTS 조합 전환)
+css/app.css       공통 스타일(Esamanru 폰트, 크림 배경 톤)
+js/neobot.js      통신 모듈: Web Serial 연결·송수신·자동 재연결·연결 버튼 UI
+js/drive.js       에너지·코인·속도업 게임 로직
+js/problems.js    학년별 문제 은행(초1~중3, 각 80문항) — 알티노 저장소에서 복사
+js/blocks-def.js  블록 정의 + JS 생성기 + 툴박스
+js/blocks-run.js  실행 엔진(async 함수, 정지 신호, 키 이벤트, 변수 공유 __v)
+vendor/blockly/   Blockly 11 (blockly/blocks/javascript compressed, msg/ko, media) — 오프라인용 동봉
+assets/ fonts/ sounds/   알티노 앱(2026newaltinopro1)에서 재사용
+portable/         폴더판 실행 스크립트(Run.bat, Make-Desktop-Shortcut.bat, 사용법.txt)
+```
+
+## 5. 통신 규격 (근거: entrylabs/entry-hw `app/modules/neobot.js`, entrylabs/entryjs `block_neobot.js`)
+- 동글 = CP210x(USB VID 0x10C4), 윈도우 COM 포트, **115200 baud**, PC가 **32ms**마다 송신
+- PC→로봇 11B: `CD AB | OUT1 OUT2 OUT3 DCL DCR SND FND OPT | sum(2..9)&FF` (FND>0이면 OPT|=8)
+- 로봇→PC 8B: `AB CD | IN1 IN2 IN3 IR BAT | sum(2..6)&FF`
+- 모터: 앞 `0x10+속도`, 뒤 `0x20+속도`, 속도 0~15, 0=정지
+- 소리: `음(1~12) + 12×옥타브값(0~5)`, 최대 65, 0=끔 / 센서 멜로디는 0~72
+- OUT(LED): 0~255 (엔트리 설명: 1~255 ≈ 2.4~4.96V)
+- 서보: 리셋 `0xBA`→200ms→`0x01` / 각도 `0xBC`(정)·`0xBD`(역)→200ms→`0xFA−속도값`→200ms→`각도+1` / 회전 `0xC0`·`0xD0`+(속도+1) / 정지 `0xFE`
+  - 속도값: 각도 블록 10%→9 … 100%→0, 회전 블록 10%→0 … 100%→9 (엔트리 그대로)
+- 컬러센서 판정(엔트리): 흰 10~50, 빨 51~90, 노 91~130, 초 131~170, 파 171~210
+- 리모컨: IR 값 비교, 버튼 1~4 선택 시 5~8 → −4
+
+## 6. 현장에서 확인된 사실 (실물)
+- 엔트리 '네오봇' 항목으로 연결되는 기기 — 위 프로토콜 일치
+- 로봇 상태등: Pairing 파란 불 = 동글 연결, ① Coding 초록 불 = PC 명령 모드
+- **엔트리 하드웨어 연결 프로그램이 켜져 있으면 포트 점유 → '액세스 거부'**. 크롬 엔트리 탭, 다른 조종기 창도 동일
+- 초기 웹판에서 '연결 직후 끊김' 발생 → 두 가지 수정 후 정상:
+  1. `port.setSignals({dataTerminalReady:false, requestToSend:false})` — .NET(PowerShell 조종기, 동작 확인)의 기본값과 일치시킴. `localStorage['nb-signals']`로 변경 가능
+  2. 수신 중 일시 오류(프레이밍 등)에 연결을 끊지 않고 재시도, 송신 실패 30회 연속일 때만 해제
+- 어느 수정이 결정적이었는지는 분리 확인 안 함
+
+## 7. 설계 메모
+- `neobot.js`: `Neobot.out`(송신 상태)을 각 화면이 바꾸면 32ms 루프가 계속 송신. `autoConnect()`는 이전에 허용한 포트로 무확인 재연결 → 페이지 이동 시 자동 연결
+- 페이지 숨김/이탈 시 모터·소리 정지
+- `drive.js` 상수(현장 조절): `SECONDS_PER_SOLVE=30`, `GAIN_PER_SOLVE=500`, `ENERGY_MAX=3000`, `START_ENERGY=500`, `SPEED_TIERS=[6,8,10,12,15]`, `UPGRADE_COST=[2,3,4,5]`. 진행은 localStorage `neobot-drive-v1`
+  - 회전: 제자리 회전 속도 = max(4, 속도×0.6), 전진+좌우 = 안쪽 바퀴 35%
+  - 문제창이 열려 있으면 주행 입력 차단
+- 블록코딩: 생성 코드에 `STATEMENT_PREFIX='await __step(id)'`(정지 확인·하이라이트), 반복문마다 `await __tick()`(16ms). 정지 버튼 = runId 증가 → StopSignal 예외로 모든 스크립트 중단 + 출력 0
+  - '시작하기' 모자 블록 여러 개 동시 실행, '키를 눌렀을 때'는 실행 중에만 동작
+  - 작품 자동 저장 localStorage `neobot-blocks-v1`, 파일 저장 `.neobot.json`
+- 키트에 **서보 없음**(제품 구성표 기준). 센서: 적외선 2, 빛 1, 소리 1, 접촉 1, LED 1, 기어16·56, 큰/작은 휠
+
+## 8. 다음 기능 후보 — '정다각형 미션' 화면 (사용자에게 제안, 미결정)
+- 바퀴 회전 센서 없음 → 거리·각도는 시간으로 제어 → 이것을 수학 활동 재료로
+- 측정 실험: 속도·시간 선택 → 주행 → 잰 거리 입력 → 표·그래프(정비례)
+- 목표 지점 정차: 비례식으로 필요한 시간 계산
+- 회전 보정: 360° 시간 측정 → 90°·72°·60° 시간 계산
+- 각도 열쇠: n 선택 → 외각(360÷n) 맞혀야 주행 버튼 열림(에너지 주행의 문제 게이팅과 같은 구조)
+- 심화: 오각별(외각 144°), 큰/작은 휠 비교(원주), 기어 16:56
+- 추천 80분 흐름: 조립 20 → 측정 10 → 계산·시험 15 → 정다각형 25 → 해체 10
+
+## 9. 시험 방법
+- 로컬: `python3 -m http.server` 후 Playwright(크로미움)
+- 가짜 포트: `navigator.serial`을 init script로 대체(getPorts/requestPort/open/setSignals/readable/writable) → 송신 패킷·체크섬, 센서 파싱, 게임 루프, 전체 블록 실행 확인
+- file:// 에서도 `isSecureContext=true`, Web Serial 사용 가능 확인(폴더판 근거)
+- 실물 시험은 사용자 PC(윈도우, 엣지/크롬)에서만 가능
+
+## 10. 운영 쪽 남은 확인
+- 학교 노트북에서 동글 드라이버(CP210x) 자동 설치 여부 — 어느 배포 방식이든 필요. 폴더판에 `[NEOPIA]dongle driver.zip` 동봉
+- 와이파이 불안 대비: 폴더판 USB 지참
+- 사전 안내: 엔트리 하드웨어 연결 프로그램 설치 요청 → '동글 꽂아 드라이버 확인'으로 변경 검토
+
+## 11. 사용자 작업 선호
+- 답변은 한국어, 근거 기반, 비약 없이
+- 수업 자료(PPT·활동지)는 건조한 단어 위주, 학교 제출 문서는 명사형 종결
+- 산출물 문서는 Word(.docx) 선호
+- 수업 설계 원칙: 놀이 + 즐거움 + 수학 + 로봇조작, PPT 최소화, 설명 → 활동지 → 활동 반복, 해설사용은 정답지 + 심화 활동지 1개
+
+## 12. 관련 자료 위치 (사용자 PC)
+- `C:\Users\PC\Desktop\네오봇\` — 동글 드라이버 zip, 네오봇에듀SMART 교과서별 자료 zip 2개, 이 웹앱 폴더, 폴더판, PowerShell 조종기(`조종기\`)
+- 참고 원본: `https://github.com/i20091119-ai/2026newaltinopro1` (알티노 앱 — 에너지 게임 원형 `webapp/js/tag.js`)

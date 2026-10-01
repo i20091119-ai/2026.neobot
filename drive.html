@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>수학 에너지 주행</title>
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  body{background:linear-gradient(rgba(255,247,234,.6),rgba(255,247,234,.6)),url('assets/bg.png') center/cover no-repeat,var(--cream);height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none}
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px 18px 18px}
+  .panel{background:#fff;border:2px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 22px}
+  /* 시작 화면 */
+  #startScreen{text-align:center;max-width:720px;width:100%}
+  #startScreen h1{margin:0 0 6px;font-size:1.9rem}
+  .grades{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:16px 0}
+  .gradebtn{font-family:inherit;font-size:1.15rem;padding:14px 20px;border:2px solid var(--line);border-radius:16px;background:#fff;cursor:pointer;min-width:72px}
+  .gradebtn.sel{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .rules{color:var(--mut);line-height:1.7;font-size:.95rem;margin:8px 0 16px}
+  /* 게임 화면 */
+  #gameScreen{display:grid;grid-template-columns:minmax(220px,300px) 1fr minmax(220px,300px);gap:18px;width:100%;max-width:1200px;align-items:center}
+  .side{display:flex;flex-direction:column;gap:12px}
+  .mascot{height:150px;object-fit:contain;display:block;margin:0 auto}
+  .ebar{height:30px;border-radius:999px;background:#f3ece2;border:2px solid var(--line);overflow:hidden;position:relative}
+  .ebar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#37c9ad,#7fe0b9);transition:width .2s}
+  .ebar i.low{background:linear-gradient(90deg,#ff7a86,#ffb23e)}
+  .ebar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.95rem}
+  .stat{display:flex;align-items:center;gap:10px;font-size:1.15rem}
+  .stat img{height:38px}
+  .stat b{font-size:1.5rem}
+  .pad{display:grid;grid-template-columns:repeat(3,minmax(90px,140px));grid-template-rows:repeat(3,minmax(90px,140px));gap:10px;justify-content:center}
+  .pad button{border:0;background:transparent;cursor:pointer;padding:0;border-radius:24px;transition:transform .05s}
+  .pad button img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .pad button.pressed{transform:scale(.92);filter:brightness(.92)}
+  .pad .stopbtn{background:#fff;border:3px solid var(--line);font-family:inherit;font-size:1.1rem;color:var(--mut)}
+  .pad .empty{visibility:hidden}
+  .bigbtn{font-size:1.35rem;padding:20px;border-radius:22px;display:flex;align-items:center;justify-content:center;gap:10px}
+  .bigbtn img{height:44px}
+  .speedrow{display:flex;align-items:center;justify-content:center;gap:10px;font-size:1.1rem}
+  .speedrow .btn{padding:8px 16px;font-size:1.2rem}
+  .dots{display:flex;gap:5px;justify-content:center}
+  .dots i{width:16px;height:16px;border-radius:50%;background:#eee3d4}
+  .dots i.on{background:var(--sun)}.dots i.cur{outline:3px solid var(--blue)}
+  .emptymsg{font-size:1.05rem;color:var(--coral);text-align:center;min-height:1.3em;font-weight:700}
+  /* 문제 */
+  .prob{font-size:2rem;text-align:center;margin:8px 0 12px;font-weight:700}
+  #probInput{font-family:inherit;font-size:2rem;width:100%;text-align:center;border:3px solid var(--line);border-radius:14px;padding:8px}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .keypad button{font-family:inherit;font-size:1.5rem;padding:12px;border-radius:14px;border:2px solid var(--line);background:#fff;cursor:pointer}
+  .keypad .ok{background:var(--mint);color:#fff;border-color:var(--mint)}
+  .fb{min-height:1.4em;color:var(--coral);font-weight:700;text-align:center;margin-top:8px}
+  @media (max-width:900px){#gameScreen{grid-template-columns:1fr;overflow:auto;max-height:100%}.pad{grid-template-columns:repeat(3,90px);grid-template-rows:repeat(3,90px)}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="index.html">← 처음으로</a>
+      <span class="chip" id="gradeChip">학년 —</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="sensors" id="sens"></span>
+      <button class="conn" id="nbConn">🔌 로봇 연결</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- 시작 화면 -->
+    <div id="startScreen" class="panel">
+      <h1>⚡ 수학 에너지 주행</h1>
+      <div class="rules">
+        로봇은 <b>에너지</b>가 있을 때만 움직여요. 달리는 동안 에너지가 줄어들어요.<br>
+        <b>충전소</b>에서 문제를 맞히면 에너지 +1문제분(약 30초), 코인 +1<br>
+        코인을 모아 <b>속도업</b>! 키보드 방향키로도 운전할 수 있어요.
+      </div>
+      <div><b>학년을 골라요</b></div>
+      <div class="grades" id="grades"></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn mint bigbtn" id="startBtn" disabled>출발! 🚗</button>
+        <button class="btn ghost hidden" id="resumeBtn">이어하기 <span id="resumeInfo"></span></button>
+      </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="gameScreen" class="hidden">
+      <div class="side panel">
+        <img class="mascot" id="mascot" src="assets/mascot-happy.png" alt="" />
+        <div class="stat"><img src="assets/energy.png" alt=""><div style="flex:1"><div class="ebar"><i id="energyBar"></i><span id="energyVal">0</span></div></div></div>
+        <div class="emptymsg" id="emptyMsg"></div>
+        <div class="stat"><img src="assets/coin.png" alt=""> 코인 <b id="coinVal">0</b></div>
+      </div>
+
+      <div class="pad" id="pad">
+        <button class="empty"></button>
+        <button data-dir="up"><img src="assets/pad-up.png" alt="전진"></button>
+        <button class="empty"></button>
+        <button data-dir="left"><img src="assets/pad-left.png" alt="좌회전"></button>
+        <button class="stopbtn" data-dir="stop">정지</button>
+        <button data-dir="right"><img src="assets/pad-right.png" alt="우회전"></button>
+        <button class="empty"></button>
+        <button data-dir="down"><img src="assets/pad-down.png" alt="후진"></button>
+        <button class="empty"></button>
+      </div>
+
+      <div class="side panel">
+        <button class="btn sun bigbtn" id="chargeBtn"><img src="assets/charge.png" alt="">충전소 (문제 풀기)</button>
+        <button class="btn bigbtn" id="upgradeBtn" style="background:var(--grape)"><img src="assets/speedup.png" alt=""><span id="upgradeText">속도업</span></button>
+        <div class="speedrow"><button class="btn ghost" id="spDown">−</button> 속도 <b id="speedVal">1</b>단계 <button class="btn ghost" id="spUp">＋</button></div>
+        <div class="dots" id="dots"></div>
+        <button class="btn ghost" id="newGameBtn" style="font-size:.85rem">새 게임(처음부터)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 문제 모달 -->
+  <div class="modal hidden" id="probModal">
+    <div class="box" style="width:380px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>⚡ 충전소</b><button class="btn ghost" id="probClose" style="padding:6px 12px">닫기</button></div>
+      <div class="prob" id="probText"></div>
+      <input id="probInput" inputmode="numeric" autocomplete="off" />
+      <div class="keypad" id="keypad"></div>
+      <div class="fb" id="probFb"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="js/neobot.js"></script>
+<script src="js/problems.js"></script>
+<script src="js/drive.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>네오봇 연결 점검</title>
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  main{max-width:760px;margin:0 auto;padding:10px 16px 30px;display:flex;flex-direction:column;gap:14px}
+  .box{background:#fff;border:2px solid var(--line);border-radius:16px;padding:14px 18px}
+  .grid{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-variant-numeric:tabular-nums}
+  .grid span{color:var(--mut)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .big{font-size:1.2rem;padding:16px 24px}
+  code{background:#f6f3ee;padding:2px 6px;border-radius:6px;font-size:.9rem}
+  .verdict{font-size:1.1rem;font-weight:700}
+  .good{color:#1b8f6a}.bad{color:#c0392b}.mid{color:#a86400}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html">← 처음으로</a>
+    <button class="conn" id="nbConn">🔌 로봇 연결</button>
+  </div>
+  <main>
+    <h2 style="margin:0">네오봇 연결 점검</h2>
+    <div class="box">
+      <div class="verdict" id="verdict">로봇 연결을 눌러 주세요</div>
+      <div class="grid" style="margin-top:10px">
+        <span>브라우저</span><b id="ua"></b>
+        <span>송신 패킷 수</span><b id="tx">0</b>
+        <span>수신 바이트 수</span><b id="rx">0</b>
+        <span>센서</span><b id="sens">-</b>
+        <span>마지막 송신</span><code id="pkt"></code>
+      </div>
+    </div>
+    <div class="box">
+      <b>시험 동작</b> (누르고 있는 동안)
+      <div class="row" style="margin-top:10px">
+        <button class="btn mint big" id="fwd">▲ 전진</button>
+        <button class="btn big" id="beep">♪ 소리</button>
+        <button class="btn coral big" id="stop">■ 정지</button>
+      </div>
+    </div>
+    <div class="box">
+      <b>신호선 설정 (DTR / RTS)</b>
+      <p style="color:var(--mut);margin:6px 0 10px;font-size:.9rem">
+        센서값이 안 들어오거나 로봇이 반응이 없으면 네 가지 조합을 바꿔 가며 '전진'을 눌러 보세요. 동작한 조합은 저장되어 다른 화면에도 적용됩니다.
+      </p>
+      <div class="row" id="sigRow"></div>
+      <div style="margin-top:8px;font-size:.9rem">현재: <b id="sigNow"></b></div>
+    </div>
+  </main>
+<script src="js/neobot.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const NB = Neobot;
+  const ua = navigator.userAgent;
+  $('ua').textContent = (/Edg\//.test(ua) ? '엣지' : /Chrome\//.test(ua) ? '크롬' : '기타') + ('serial' in navigator ? ' (Web Serial 지원)' : ' — Web Serial 미지원');
+  NB.mountConnectButton($('nbConn'));
+
+  const hold = (el, on, off) => {
+    el.addEventListener('pointerdown', (e) => { el.setPointerCapture(e.pointerId); on(); });
+    el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off);
+  };
+  hold($('fwd'), () => NB.setMotors(8, 8), () => NB.setMotors(0, 0));
+  hold($('beep'), () => { NB.out.SND = NB.noteValue(1, 3); }, () => { NB.out.SND = 0; });
+  $('stop').onclick = () => NB.resetOutputs();
+
+  const combos = [[false, false], [true, true], [true, false], [false, true]];
+  combos.forEach(([d, r]) => {
+    const b = document.createElement('button');
+    b.className = 'btn ghost';
+    b.textContent = `DTR ${d ? '켬' : '끔'} · RTS ${r ? '켬' : '끔'}`;
+    b.onclick = async () => {
+      try { await NB.setSignals({ dataTerminalReady: d, requestToSend: r }); }
+      catch (e) { alert('신호 변경 실패: ' + e.message); }
+    };
+    $('sigRow').appendChild(b);
+  });
+
+  setInterval(() => {
+    const s = NB.status();
+    $('tx').textContent = s.txCount;
+    $('rx').textContent = s.rxBytes;
+    $('sens').textContent = `IN1 ${NB.sensor.IN1} · IN2 ${NB.sensor.IN2} · IN3 ${NB.sensor.IN3} · IR ${NB.sensor.IR} · 배터리 ${NB.sensor.BAT}`;
+    $('pkt').textContent = Array.from(NB.buildPacket()).map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+    $('sigNow').textContent = `DTR ${s.signals.dataTerminalReady ? '켬' : '끔'} · RTS ${s.signals.requestToSend ? '켬' : '끔'}`;
+    let v, c;
+    if (!s.connected) { v = '연결 안 됨 — 로봇 연결을 누르세요'; c = 'mid'; }
+    else if (s.writeStuck) { v = '송신이 막힘 — 신호선 조합을 바꿔 보세요'; c = 'bad'; }
+    else if (s.rxBytes === 0) { v = '포트는 열렸지만 로봇에서 받은 데이터 없음 — 로봇 전원·페어링(파란 불)·신호선 조합 확인'; c = 'bad'; }
+    else if (!s.receiving) { v = '데이터가 끊김 — 로봇 전원·거리 확인'; c = 'mid'; }
+    else { v = '정상 통신 중 — 전진을 눌러 보세요'; c = 'good'; }
+    $('verdict').textContent = v; $('verdict').className = 'verdict ' + c;
+  }, 300);
+</script>
+</body>
+</html>
