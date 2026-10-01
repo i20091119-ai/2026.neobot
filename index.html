@@ -10,7 +10,7 @@
   main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px}
   h1{font-size:2.2rem;margin:0}
   .sub{color:var(--mut);margin:0}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;width:min(900px,100%)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;width:min(1100px,100%)}
   .card{background:#fff;border:3px solid var(--line);border-radius:28px;padding:26px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;box-shadow:var(--shadow);transition:.15s}
   .card:hover{transform:translateY(-3px)}
   .card img{height:110px;display:block;margin:0 auto 10px}
@@ -19,6 +19,8 @@
   .c1{border-color:#ffe0a3}.c2{border-color:#b9ecdc}
   .tag{display:inline-block;font-size:.8rem;border-radius:999px;padding:3px 10px;background:#fff3e0;color:#a86400}
   .c2 .tag{background:#e9fbf4;color:#1b8f6a}
+  .c3{border-color:#e2d4ff}.c3 .tag{background:#f6f1ff;color:#7a4fd6}
+  .shapes{height:110px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:3.4rem;color:var(--grape);letter-spacing:.15em}
   .help{font-size:.85rem;color:var(--mut);text-align:center;line-height:1.6}
   .warnbox{background:#fff3e0;border:2px solid #ffe0a3;border-radius:14px;padding:10px 14px;font-size:.9rem}
 </style>
@@ -38,11 +40,17 @@
     </div>
     <div id="noSerial" class="warnbox hidden">이 브라우저는 로봇 연결(Web Serial)을 지원하지 않습니다. <b>크롬</b> 또는 <b>엣지</b>로 열어 주세요.</div>
     <div class="cards">
+      <button class="card c3" onclick="location.href='mission.html'">
+        <div class="shapes">▲ ■ ⬢</div>
+        <span class="tag">수업 미션</span>
+        <h2>정다각형 미션</h2>
+        <p>조립 → 한 바퀴 시간 → 정사각형 → 정삼각형·정육각형. 도는 각을 계산해 로봇이 도형을 그리며 달려요.</p>
+      </button>
       <button class="card c1" onclick="location.href='drive.html'">
         <img src="assets/energy.png" alt="" />
-        <span class="tag">직접 운전</span>
-        <h2>수학 에너지 주행</h2>
-        <p>문제를 풀어 <b>에너지</b>를 채우고 운전해요. 달릴수록 에너지가 줄어요. 코인을 모아 <b>속도업</b>!</p>
+        <span class="tag">놀이</span>
+        <h2>술래잡기 · 이어달리기</h2>
+        <p>문제를 풀어 <b>에너지</b>를 채우고 운전해요. 자유 주행 · 술래잡기 · 이어달리기 모드.</p>
       </button>
       <button class="card c2" onclick="location.href='blocks.html'">
         <img src="assets/mascot-happy.png" alt="" />

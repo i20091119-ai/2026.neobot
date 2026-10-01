@@ -48,6 +48,23 @@
   .keypad button{font-family:inherit;font-size:1.5rem;padding:12px;border-radius:14px;border:2px solid var(--line);background:#fff;cursor:pointer}
   .keypad .ok{background:var(--mint);color:#fff;border-color:var(--mint)}
   .fb{min-height:1.4em;color:var(--coral);font-weight:700;text-align:center;margin-top:8px}
+  /* 모드 */
+  .modes{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 4px}
+  .only-tag,.only-relay{display:none!important}
+  body.mode-tag .only-tag,body.mode-relay .only-relay{display:flex!important}
+  body.mode-relay .no-relay{display:none!important}
+  body.it{box-shadow:inset 0 0 0 10px #ff3b4e}
+  .tagrow{gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .timer{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;min-width:4ch;text-align:center}
+  .timer.over{color:var(--coral)}
+  .itbtn.on{background:#ff3b4e;color:#fff}
+  .bigspeed{font-size:3.2rem;font-weight:700;text-align:center;color:var(--nb)}
+  .relaystat{flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .rq{flex-direction:column;gap:8px}
+  .rq .prob{font-size:1.5rem;margin:4px 0}
+  #rqInput{font-family:inherit;font-size:1.8rem;width:100%;text-align:center;border:3px solid var(--line);border-radius:14px;padding:6px}
+  #rqInput:disabled{background:#f3ece2}
+  .small{font-size:.9rem;color:var(--mut)}
   @media (max-width:900px){#gameScreen{grid-template-columns:1fr;overflow:auto;max-height:100%}.pad{grid-template-columns:repeat(3,90px);grid-template-rows:repeat(3,90px)}}
 </style>
 </head>
@@ -66,11 +83,24 @@
   <div class="stage">
     <!-- 시작 화면 -->
     <div id="startScreen" class="panel">
-      <h1>⚡ 수학 에너지 주행</h1>
-      <div class="rules">
+      <h1 id="startTitle">⚡ 수학 에너지 주행</h1>
+      <div class="modes" id="modes">
+        <button class="gradebtn" data-mode="free">⚡ 자유 주행</button>
+        <button class="gradebtn" data-mode="tag">🏃 술래잡기</button>
+        <button class="gradebtn" data-mode="relay">🏁 이어달리기</button>
+      </div>
+      <div class="rules" id="rulesFree">
         로봇은 <b>에너지</b>가 있을 때만 움직여요. 달리는 동안 에너지가 줄어들어요.<br>
         <b>충전소</b>에서 문제를 맞히면 에너지 +1문제분(약 30초), 코인 +1<br>
         코인을 모아 <b>속도업</b>! 키보드 방향키로도 운전할 수 있어요.
+      </div>
+      <div class="rules hidden" id="rulesTag">
+        에너지 주행 + <b>술래잡기</b>. 잡히면 <b>[😵 잡혔어요]</b> → 문제 1개 맞히면 부활<br>
+        술래 모둠은 <b>[🔴 술래]</b> · 한 판 <b>2분</b> · 최고 속도 12
+      </div>
+      <div class="rules hidden" id="rulesRelay">
+        기다리는 동안 <b>각도 문제</b>를 풀어요. 많이 맞힐수록 출발 속도 조금 UP (8 · 9 · 10)<br>
+        앞 로봇이 출발선을 통과하면 <b>[내 차례! 출발]</b> · 돌아오면 <b>[완주]</b>
       </div>
       <div><b>학년을 골라요</b></div>
       <div class="grades" id="grades"></div>
@@ -84,9 +114,15 @@
     <div id="gameScreen" class="hidden">
       <div class="side panel">
         <img class="mascot" id="mascot" src="assets/mascot-happy.png" alt="" />
-        <div class="stat"><img src="assets/energy.png" alt=""><div style="flex:1"><div class="ebar"><i id="energyBar"></i><span id="energyVal">0</span></div></div></div>
-        <div class="emptymsg" id="emptyMsg"></div>
-        <div class="stat"><img src="assets/coin.png" alt=""> 코인 <b id="coinVal">0</b></div>
+        <div class="only-relay relaystat">
+          <div class="small">출발 속도</div>
+          <div class="bigspeed">속도 <span id="relaySpeed">8</span></div>
+          <div>내 차례 <input id="relayOrder" class="num" inputmode="numeric" maxlength="1" style="width:56px;font-size:1.4rem;text-align:center;border:3px solid var(--line);border-radius:10px;font-family:inherit"> 번</div>
+          <div class="emptymsg" id="relayPhase" style="color:var(--nb)"></div>
+        </div>
+        <div class="stat no-relay"><img src="assets/energy.png" alt=""><div style="flex:1"><div class="ebar"><i id="energyBar"></i><span id="energyVal">0</span></div></div></div>
+        <div class="emptymsg no-relay" id="emptyMsg"></div>
+        <div class="stat no-relay"><img src="assets/coin.png" alt=""> 코인 <b id="coinVal">0</b></div>
       </div>
 
       <div class="pad" id="pad">
@@ -102,11 +138,30 @@
       </div>
 
       <div class="side panel">
-        <button class="btn sun bigbtn" id="chargeBtn"><img src="assets/charge.png" alt="">충전소 (문제 풀기)</button>
-        <button class="btn bigbtn" id="upgradeBtn" style="background:var(--grape)"><img src="assets/speedup.png" alt=""><span id="upgradeText">속도업</span></button>
-        <div class="speedrow"><button class="btn ghost" id="spDown">−</button> 속도 <b id="speedVal">1</b>단계 <button class="btn ghost" id="spUp">＋</button></div>
-        <div class="dots" id="dots"></div>
-        <button class="btn ghost" id="newGameBtn" style="font-size:.85rem">새 게임(처음부터)</button>
+        <div class="only-tag tagrow">
+          <button class="btn coral" id="caughtBtn" style="font-size:1.1rem;padding:12px 16px">😵 잡혔어요</button>
+          <button class="btn ghost itbtn" id="itBtn" style="font-size:1.1rem;padding:12px 16px">🔴 술래</button>
+        </div>
+        <div class="only-tag tagrow">
+          <span class="timer" id="timerVal">2:00</span>
+          <button class="btn ghost" id="timerBtn">▶ 2분 시작</button>
+        </div>
+        <div class="only-relay rq">
+          <div class="small">오늘 배운 것</div>
+          <div class="prob" id="rqText"></div>
+          <input id="rqInput" inputmode="numeric" autocomplete="off" />
+          <button class="btn" id="rqOk">확인</button>
+          <div class="fb" id="rqFb"></div>
+          <div class="small">맞힌 문제 <span id="rqCount">0</span></div>
+        </div>
+        <button class="btn mint bigbtn only-relay" id="goBtn">🏁 내 차례! 출발</button>
+        <button class="btn sun bigbtn only-relay" id="finishBtn">🏆 완주</button>
+        <button class="btn sun bigbtn no-relay" id="chargeBtn"><img src="assets/charge.png" alt="">충전소 (문제 풀기)</button>
+        <button class="btn bigbtn no-relay" id="upgradeBtn" style="background:var(--grape)"><img src="assets/speedup.png" alt=""><span id="upgradeText">속도업</span></button>
+        <div class="speedrow no-relay"><button class="btn ghost" id="spDown">−</button> 속도 <b id="speedVal">1</b>단계 <button class="btn ghost" id="spUp">＋</button></div>
+        <div class="dots no-relay" id="dots"></div>
+        <button class="btn ghost" id="modeBtn" style="font-size:.85rem">모드 바꾸기</button>
+        <button class="btn ghost no-relay" id="newGameBtn" style="font-size:.85rem">새 게임(처음부터)</button>
       </div>
     </div>
   </div>
@@ -125,6 +180,7 @@
 
 <script src="js/neobot.js"></script>
 <script src="js/problems.js"></script>
+<script src="js/angle-problems.js"></script>
 <script src="js/drive.js"></script>
 </body>
 </html>
