@@ -10,7 +10,7 @@
   main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:16px}
   h1{font-size:2.2rem;margin:0}
   .sub{color:var(--mut);margin:0}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;width:min(900px,100%)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;width:min(1100px,100%)}
   .card{background:#fff;border:3px solid var(--line);border-radius:28px;padding:26px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;box-shadow:var(--shadow);transition:.15s}
   .card:hover{transform:translateY(-3px)}
   .card img{height:110px;display:block;margin:0 auto 10px}
@@ -19,6 +19,8 @@
   .c1{border-color:#ffe0a3}.c2{border-color:#b9ecdc}
   .tag{display:inline-block;font-size:.8rem;border-radius:999px;padding:3px 10px;background:#fff3e0;color:#a86400}
   .c2 .tag{background:#e9fbf4;color:#1b8f6a}
+  .c3{border-color:#e2d4ff}.c3 .tag{background:#f6f1ff;color:#7a4fd6}
+  .shapes{height:110px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:3.4rem;color:var(--grape);letter-spacing:.15em}
   .help{font-size:.85rem;color:var(--mut);text-align:center;line-height:1.6}
   .warnbox{background:#fff3e0;border:2px solid #ffe0a3;border-radius:14px;padding:10px 14px;font-size:.9rem}
 </style>
@@ -49,6 +51,12 @@
         <span class="tag">블록코딩</span>
         <h2>네오봇 블록코딩</h2>
         <p>엔트리처럼 블록을 쌓아 모터·소리·LED·서보·센서를 프로그래밍해요.</p>
+      </button>
+      <button class="card c3" onclick="location.href='polygon.html'">
+        <div class="shapes">▲ ■ ⬟</div>
+        <span class="tag">수학 미션</span>
+        <h2>정다각형 미션</h2>
+        <p>시간으로 <b>거리</b>와 <b>각도</b>를 계산해요. 외각을 맞히면 로봇이 정다각형을 그리며 달려요.</p>
       </button>
     </div>
     <p class="help">

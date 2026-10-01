@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>정다각형 미션</title>
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  body{background:linear-gradient(rgba(255,247,234,.6),rgba(255,247,234,.6)),url('assets/bg.png') center/cover no-repeat,var(--cream);min-height:100vh;display:flex;flex-direction:column}
+  .title{font-size:1.2rem;font-weight:700}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:0 16px 10px}
+  .tab{font-family:inherit;font-size:1.05rem;padding:10px 18px;border:2px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;color:var(--ink)}
+  .tab.sel{background:var(--nb);border-color:var(--nb);color:#fff}
+  .tab .ok{color:#1b8f6a}.tab.sel .ok{color:#fff}
+  .stage{flex:1;display:flex;justify-content:center;padding:0 16px 18px}
+  .step{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr);gap:18px;width:100%;max-width:1150px;align-items:start}
+  .panel{background:#fff;border:2px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 22px}
+  .panel h2{margin:0 0 6px;font-size:1.35rem}
+  .desc{color:var(--mut);line-height:1.6;margin:0 0 12px;font-size:.95rem}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .lbl{min-width:84px;font-weight:700}
+  .pick{font-family:inherit;font-size:1.05rem;padding:8px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;color:var(--ink)}
+  .pick.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+  .pick.done::after{content:' ✓';color:#1b8f6a}.pick.sel.done::after{color:#fff}
+  .num{font-family:inherit;font-size:1.4rem;width:120px;text-align:center;border:3px solid var(--line);border-radius:12px;padding:6px}
+  .big{font-size:1.25rem;padding:14px 22px;border-radius:18px}
+  .q{background:#f4fbf9;border:2px solid #b9ecdc;border-radius:16px;padding:12px 14px;margin:12px 0;line-height:1.7}
+  .q.lock{background:#fff7ea;border-color:#ffe0a3}
+  .fb{min-height:1.4em;font-weight:700;margin-top:6px}
+  .fb.no{color:var(--coral)}.fb.yes{color:#1b8f6a}
+  .result{font-size:1.2rem;margin-top:10px}
+  .result b{font-size:1.6rem;color:var(--nb)}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;margin-top:8px}
+  th,td{border-bottom:2px solid var(--line);padding:6px 8px;text-align:center}
+  th{color:var(--mut);font-weight:500}
+  td .x{border:0;background:none;color:var(--mut);cursor:pointer;font-size:1rem}
+  svg text{font-family:inherit;font-size:12px;fill:var(--mut)}
+  #pgCanvas{width:100%;aspect-ratio:1/1;background:#fffdf8;border:2px solid var(--line);border-radius:16px;display:block}
+  .prog{font-size:1rem;background:#f6f1ff;border:2px solid #e2d4ff;border-radius:14px;padding:10px 12px;line-height:1.7}
+  .stopbtn{font-size:1.05rem;padding:10px 18px}
+  .busy{color:var(--nb);font-weight:700;min-height:1.3em}
+  @media (max-width:820px){.step{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="display:flex;gap:14px;align-items:center">
+      <a href="index.html">← 처음으로</a>
+      <span class="title">🔺 정다각형 미션</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="sensors" id="sens"></span>
+      <button class="btn coral stopbtn" id="stopBtn">■ 정지 (Space)</button>
+      <button class="conn" id="nbConn">🔌 로봇 연결</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab" data-step="1">① 거리 재기 <span class="ok" id="ok1"></span></button>
+    <button class="tab" data-step="2">② 목표 정차 <span class="ok" id="ok2"></span></button>
+    <button class="tab" data-step="3">③ 회전 맞추기 <span class="ok" id="ok3"></span></button>
+    <button class="tab" data-step="4">④ 정다각형 <span class="ok" id="ok4"></span></button>
+  </div>
+
+  <div class="stage">
+    <!-- ① 거리 재기 -->
+    <div class="step" id="step1">
+      <div class="panel">
+        <h2>① 몇 초에 몇 cm 갈까?</h2>
+        <p class="desc">네오봇에는 거리를 재는 장치가 없어요. 그래서 <b>시간</b>으로 거리를 정해요.<br>
+          시간을 골라 출발 → 출발선에서 멈춘 곳까지 <b>자로 재서</b> 입력해요.</p>
+        <div class="row"><span class="lbl">속도</span><span id="spPicks"></span></div>
+        <div class="row"><span class="lbl">시간</span><span id="tPicks"></span>
+          <button class="btn mint big" id="m1Go">출발 ▶</button></div>
+        <div class="busy" id="m1Busy"></div>
+        <div class="q hidden" id="m1Ask">
+          <b id="m1AskT"></b> 동안 몇 cm 갔나요?
+          <div class="row"><input class="num" id="m1Dist" inputmode="decimal" autocomplete="off" /> cm
+            <button class="btn" id="m1Save">기록</button></div>
+          <div class="fb no" id="m1Fb"></div>
+        </div>
+        <table><thead><tr><th>시간(초)</th><th>거리(cm)</th><th>거리 ÷ 시간</th><th></th></tr></thead><tbody id="m1Table"></tbody></table>
+      </div>
+      <div class="panel">
+        <h2>시간과 거리 그래프</h2>
+        <p class="desc">점들이 0에서 시작하는 <b>곧은 선</b> 가까이 놓이면 시간과 거리는 <b>정비례</b>예요.</p>
+        <svg id="m1Graph" viewBox="0 0 360 260" style="width:100%"></svg>
+        <div class="result" id="m1Result"></div>
+      </div>
+    </div>
+
+    <!-- ② 목표 정차 -->
+    <div class="step hidden" id="step2">
+      <div class="panel">
+        <h2>② 목표 지점에 딱 멈추기</h2>
+        <p class="desc">①에서 구한 <b>1초에 가는 거리</b>로 몇 초 달려야 할지 계산해요.</p>
+        <div class="q lock hidden" id="m2Need">먼저 <b>① 거리 재기</b>에서 기록을 1개 이상 남겨요.</div>
+        <div id="m2Body">
+          <div class="row"><span class="lbl">목표 거리</span><span id="dPicks"></span></div>
+          <div class="q">
+            1초에 <b id="m2Rate"></b> cm 가요.<br>
+            <b id="m2Target"></b> cm 가려면 몇 초 달려야 할까요?
+            <div class="row"><input class="num" id="m2Ans" inputmode="decimal" autocomplete="off" /> 초
+              <button class="btn" id="m2Check">계산 확인</button></div>
+            <div class="fb" id="m2Fb"></div>
+          </div>
+          <div class="row"><button class="btn mint big" id="m2Go" disabled>출발 ▶</button><span class="busy" id="m2Busy"></span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>생각해 보기</h2>
+        <p class="desc" style="font-size:1.05rem">
+          · 1초에 10cm 가는 로봇이 30cm 가려면? → 30 ÷ 10 = <b>3초</b><br>
+          · 목표에 못 미쳤나요, 지나쳤나요? 왜 그럴까요?<br>
+          · 출발할 때 천천히 빨라지고, 멈출 때 조금 미끄러져요.<br>
+          · 바닥(책상·교실 바닥)이 바뀌면 다시 재야 할까요?</p>
+      </div>
+    </div>
+
+    <!-- ③ 회전 맞추기 -->
+    <div class="step hidden" id="step3">
+      <div class="panel">
+        <h2>③ 딱 한 바퀴(360°) 돌기</h2>
+        <p class="desc">로봇 코 앞에 테이프로 표시하고, 제자리에서 <b>정확히 한 바퀴</b> 도는 시간을 찾아요.<br>
+          모자라면 시간을 늘리고, 넘치면 줄여요.</p>
+        <div class="row"><span class="lbl">회전 속도</span><span id="tsPicks"></span></div>
+        <div class="row"><span class="lbl">시간</span>
+          <button class="btn ghost" data-adj="-0.5">−0.5</button><button class="btn ghost" data-adj="-0.1">−0.1</button>
+          <b id="m3Try" style="font-size:1.6rem;min-width:4.5ch;text-align:center"></b>초
+          <button class="btn ghost" data-adj="0.1">+0.1</button><button class="btn ghost" data-adj="0.5">+0.5</button></div>
+        <div class="row"><button class="btn mint big" id="m3Go">돌기 ↺</button>
+          <button class="btn sun big" id="m3Set">이 시간이 한 바퀴!</button></div>
+        <div class="busy" id="m3Busy"></div>
+        <div class="result" id="m3Result"></div>
+      </div>
+      <div class="panel">
+        <h2>90°는 몇 초?</h2>
+        <div class="q lock" id="m3Need">왼쪽에서 <b>한 바퀴 시간</b>을 먼저 정해요.</div>
+        <div class="q hidden" id="m3Quiz">
+          한 바퀴(360°)에 <b id="m3T360"></b>초 걸려요.<br>
+          90°는 한 바퀴의 몇 분의 몇일까요? 그러면 90° 도는 데 몇 초?
+          <div class="row"><input class="num" id="m3Ans" inputmode="decimal" autocomplete="off" /> 초
+            <button class="btn" id="m3Check">계산 확인</button></div>
+          <div class="fb" id="m3Fb"></div>
+          <div class="row"><button class="btn mint" id="m3Go90" disabled>90° 돌아 보기 ↺</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 정다각형 -->
+    <div class="step hidden" id="step4">
+      <div class="panel">
+        <h2>④ 정다각형 그리며 달리기</h2>
+        <div class="q lock hidden" id="m4Need"></div>
+        <div id="m4Body">
+          <div class="row"><span class="lbl">도형</span><span id="nPicks"></span></div>
+          <div class="row"><span class="lbl">한 변</span><span id="sPicks"></span></div>
+          <div class="q lock" id="m4Key">
+            🔑 <b id="m4KeyQ"></b>
+            <div class="row"><input class="num" id="m4Ans" inputmode="numeric" autocomplete="off" /> °
+              <button class="btn" id="m4Check">열쇠 확인</button></div>
+            <div class="fb" id="m4Fb"></div>
+          </div>
+          <div class="prog hidden" id="m4Prog"></div>
+          <div class="row"><button class="btn mint big" id="m4Go" disabled>🔒 주행</button><span class="busy" id="m4Busy"></span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <canvas id="pgCanvas" width="600" height="600"></canvas>
+        <p class="desc" id="m4Tip" style="margin-top:10px">로봇이 지나간 길이 그려져요. 실제 로봇 길과 비교해 봐요.</p>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script src="js/neobot.js"></script>
+<script src="js/polygon.js"></script>
+</body>
+</html>
