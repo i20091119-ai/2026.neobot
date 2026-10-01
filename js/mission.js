@@ -17,8 +17,16 @@
   const L_CHOICES = [0.5, 1.0, 1.5, 2.0];      // 변 길이(직진 시간, 초)
   // 부품 목록 — 사진 받은 뒤 확정
   const PARTS = ['컨트롤러', '모터 2개', '바퀴 2개', '보조 바퀴', '건전지 AA 4개'];
-  // 조립 순서 사진 — assets/assembly/ 에 넣으면 표시(없으면 자리 표시)
+  // 조립 순서 사진 — assets/assembly/1~5.jpg 에 넣으면 표시. 하나도 없으면 사진 단계 없이 바로 바퀴 시험
   const PHOTOS = [1, 2, 3, 4, 5].map(i => ({ src: `assets/assembly/${i}.jpg`, cap: `조립 ${i}단계` }));
+  let photos = [];                             // 실제로 불러온 사진만
+  function probePhotos() {
+    PHOTOS.forEach((p, i) => {
+      const im = new Image();
+      im.onload = () => { photos.push({ ...p, i }); photos.sort((a, b) => a.i - b.i); if (st.view === 's1') render(); };
+      im.src = p.src;
+    });
+  }
   const GRADES = { e5: '초5', e6: '초6', m1: '중1' };
   const SHAPES = {
     sq: { n: 4, turn: 90, name: '정사각형', div: true },
@@ -277,14 +285,15 @@
     let h = `<div class="panel" style="max-width:900px;margin:0 auto"><h2>① 조립</h2>
       <p class="guide">부품을 찾아 모두 체크</p>
       <div class="checks">${PARTS.map((p, i) => `<label class="${s.checks.includes(i) ? 'on' : ''}" data-act="part" data-v="${i}"><input type="checkbox" tabindex="-1" ${s.checks.includes(i) ? 'checked' : ''} style="pointer-events:none"> ${p}</label>`).join('')}</div>`;
-    if (all) {
-      const p = PHOTOS[s.photo];
-      h += `<h2 style="margin-top:18px">조립 순서 <span style="color:var(--mut);font-size:1rem">${s.photo + 1} / ${PHOTOS.length}</span></h2>
-        <div class="photo"><img src="${p.src}" alt="${p.cap}" onerror="this.replaceWith(document.createTextNode('사진 준비 중 · ${p.cap}'))"></div>
-        <div class="row" style="justify-content:space-between"><button class="btn ghost" data-act="photo" data-v="-1" ${s.photo ? '' : 'disabled'}>◀ 이전</button>
-          <b>${p.cap}</b><button class="btn ghost" data-act="photo" data-v="1" ${s.photo < PHOTOS.length - 1 ? '' : 'disabled'}>다음 ▶</button></div>`;
+    const n = photos.length, pi = Math.min(s.photo, Math.max(0, n - 1));
+    if (all && n) {
+      const p = photos[pi];
+      h += `<h2 style="margin-top:18px">조립 순서 <span style="color:var(--mut);font-size:1rem">${pi + 1} / ${n}</span></h2>
+        <div class="photo"><img src="${p.src}" alt="${p.cap}"></div>
+        <div class="row" style="justify-content:space-between"><button class="btn ghost" data-act="photo" data-v="-1" ${pi ? '' : 'disabled'}>◀ 이전</button>
+          <b>${p.cap}</b><button class="btn ghost" data-act="photo" data-v="1" ${pi < n - 1 ? '' : 'disabled'}>다음 ▶</button></div>`;
     }
-    if (all && s.seen) {
+    if (all && (!n || s.seen || pi >= n - 1)) {
       h += `<div class="q"><div class="qt">바퀴 시험 — 1초 앞으로</div>
         <div class="row"><button class="btn mint big" data-act="wheel" ${busy ? 'disabled' : ''}>바퀴 시험 ▶</button></div>
         ${s.wheel ? `<div class="qt">앞으로 갔나요?</div><div class="row">
@@ -436,7 +445,7 @@
     begin: () => { const k = [1, 2, 3, 4].find(i => !st.done['s' + i]) || 5; st.view = 's' + k; save(); render(); },
     goto: (d) => goto(d.v),
     part: (d) => { const i = +d.v, c = st.s1.checks; c.includes(i) ? c.splice(c.indexOf(i), 1) : c.push(i); save(); render(); },
-    photo: (d) => { st.s1.photo = Math.max(0, Math.min(PHOTOS.length - 1, st.s1.photo + +d.v)); if (st.s1.photo === PHOTOS.length - 1) st.s1.seen = true; save(); render(); },
+    photo: (d) => { st.s1.photo = Math.max(0, Math.min(photos.length - 1, st.s1.photo + +d.v)); if (st.s1.photo === photos.length - 1) st.s1.seen = true; save(); render(); },
     wheel: async () => { if (await run([fwd(1)])) { if (!st.s1.wheel) st.s1.wheel = 'asked'; commit(); } },
     wheelAns: (d) => { st.s1.wheel = d.v; commit(); },
     adj: (d) => { st.Ttry = clampT(st.Ttry + parseFloat(d.v)); st.s2msg = ''; save(); render(); },
@@ -474,6 +483,7 @@
 
   function init() {
     load();
+    probePhotos();
     NB.mountConnectButton($('nbConn'));
     const view = $('view');
     view.addEventListener('click', (e) => {

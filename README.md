@@ -36,7 +36,7 @@
 `js/mission.js` 상단 상수
 - `FWD_SPEED`·`TURN_SPEED` 직진·회전 속도(기본 5), `PAUSE_MS` 동작 사이 정지(0.5초)
 - `T_DEFAULT` 한 바퀴 시간 기본값(6.0초), `T_SUGGEST` 덜 돎·더 돎 조정 폭(0.3초), `TIME_TOL` 시간 답 허용 오차(0.05초)
-- `PARTS` 부품 목록, `PHOTOS` 조립 사진(`assets/assembly/1~5.jpg`에 넣으면 표시)
+- `PARTS` 부품 목록, `PHOTOS` 조립 사진(`assets/assembly/1~5.jpg`에 넣으면 표시, 없으면 사진 단계 생략)
 
 `js/drive.js` 모드 상수: `TAG_MAX_SPEED`(12), `TAG_SECONDS`(120), `RELAY_SPEEDS`(0~2→8, 3~5→9, 6↑→10)
 
