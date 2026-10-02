@@ -45,7 +45,7 @@
   const RELAY_KEY = 'neobot-relay-v1';         // drive.js 이어달리기 기록(기록 화면에서 읽기만)
 
   const fresh = () => ({
-    team: null, grade: null, view: 'start', T: null, Ttry: T_DEFAULT, spun: false, s2msg: '',
+    grade: null, view: 'start', T: null, Ttry: T_DEFAULT, spun: false, s2msg: '',
     done: {}, s1: { checks: [], photo: 0, seen: false, wheel: '' }, shapes: {},
     s4: { sub: 'exp', pred: '', expRan: false, result: '', sumSeen: false }, m1: {}, adv: { card: null, review: 0 },
   });
@@ -76,7 +76,8 @@
       if (!Array.isArray(st.s1.checks)) st.s1.checks = [];
       st.T = st.T > 0 ? clampT(st.T) : null;
       st.Ttry = st.Ttry > 0 ? clampT(st.Ttry) : T_DEFAULT;
-      if (!(st.team >= 1 && st.team <= 25) || !GRADES[st.grade]) { st.team = null; st.view = 'start'; }
+      delete st.team;                            // 예전 저장값의 모둠 번호는 버림
+      if (!GRADES[st.grade]) st.view = 'start';
       if (!['start', 's1', 's2', 's3', 's4', 's5', 'adv'].includes(st.view)) st.view = 'start';
       if (st.adv.card && !SHAPES[st.adv.card]) st.adv.card = null;
     } catch (e) { st = fresh(); }
@@ -274,11 +275,9 @@
 
   function viewStart() {
     return `<div class="panel" style="max-width:780px;margin:0 auto">
-      <h2>모둠 번호</h2><p class="guide">로봇 번호 스티커 = 모둠 번호</p>
-      <div class="teams">${Array.from({ length: 25 }, (_, i) => i + 1).map(n => `<button class="pick ${st.team === n ? 'sel' : ''}" data-act="team" data-v="${n}">${n}</button>`).join('')}</div>
       <h2>학년</h2>
       <div class="row">${Object.entries(GRADES).map(([k, v]) => `<button class="pick ${st.grade === k ? 'sel' : ''}" data-act="grade" data-v="${k}">${v}</button>`).join('')}</div>
-      <div class="next"><button class="btn mint big" data-act="begin" ${st.team && st.grade ? '' : 'disabled'}>시작 ▶</button></div></div>`;
+      <div class="next"><button class="btn mint big" data-act="begin" ${st.grade ? '' : 'disabled'}>시작 ▶</button></div></div>`;
   }
   function viewS1() {
     const s = st.s1, all = PARTS.every((_, i) => s.checks.includes(i));
@@ -400,8 +399,8 @@
   function render() {
     const started = st.view !== 'start';
     $('barWrap').classList.toggle('hidden', !started);
-    $('teamChip').classList.toggle('hidden', !st.team);
-    $('teamChip').textContent = st.team ? `${st.team}모둠 · ${GRADES[st.grade] || ''}` : '';
+    $('teamChip').classList.toggle('hidden', !st.grade);
+    $('teamChip').textContent = GRADES[st.grade] || '';
     $('tBadge').classList.toggle('hidden', !st.T || !started);
     $('tBadge').textContent = st.T ? `우리 로봇 한 바퀴 = ${fmtT(st.T)}초` : '';
     const V = { start: viewStart, s1: viewS1, s2: viewS2, s3: viewS3, s4: viewS4, s5: viewS5, adv: viewAdv };
@@ -430,7 +429,7 @@
     let relay = null;
     try { relay = JSON.parse(localStorage.getItem(RELAY_KEY) || 'null'); } catch (e) {}
     const stars = (id) => st.shapes[id] && st.shapes[id].star ? '★'.repeat(st.shapes[id].star) : '–';
-    const rows = [['모둠', st.team ? st.team + '모둠' : '–'], ['학년', GRADES[st.grade] || '–'], ['한 바퀴 시간', st.T ? fmtT(st.T) + '초' : '–'],
+    const rows = [['학년', GRADES[st.grade] || '–'], ['한 바퀴 시간', st.T ? fmtT(st.T) + '초' : '–'],
       ['완료 단계', STAGES.filter(([k]) => st.done['s' + k]).map(([, t]) => t).join(' ') || '–'],
       ['정사각형', stars('sq')], ['정삼각형', stars('tri')], ['정육각형', stars('hex')],
       ...[...CARDS, 'star'].filter(id => st.shapes[id] && st.shapes[id].star).map(id => [SHAPES[id].name, stars(id)]),
@@ -440,7 +439,6 @@
 
   // ---- 동작 ----
   const ACT = {
-    team: (d) => { st.team = +d.v; save(); render(); },
     grade: (d) => { st.grade = d.v; reviewNext = null; save(); render(); },
     begin: () => { const k = [1, 2, 3, 4].find(i => !st.done['s' + i]) || 5; st.view = 's' + k; save(); render(); },
     goto: (d) => goto(d.v),
