@@ -274,10 +274,11 @@
   const unlocked = (k) => k === 1 || !!st.done['s' + (k - 1)];
 
   function viewStart() {
-    return `<div class="panel" style="max-width:780px;margin:0 auto">
-      <h2>학년</h2>
-      <div class="row">${Object.entries(GRADES).map(([k, v]) => `<button class="pick ${st.grade === k ? 'sel' : ''}" data-act="grade" data-v="${k}">${v}</button>`).join('')}</div>
-      <div class="next"><button class="btn mint big" data-act="begin" ${st.grade ? '' : 'disabled'}>시작 ▶</button></div></div>`;
+    return `<div class="startbox">
+      <h1>🔺 정다각형 미션</h1>
+      <p class="startsub">학년을 골라요</p>
+      <div class="grades">${Object.entries(GRADES).map(([k, v]) => `<button class="gradebig ${st.grade === k ? 'sel' : ''}" data-act="grade" data-v="${k}">${v}</button>`).join('')}</div>
+      <button class="btn mint startbtn" data-act="begin" ${st.grade ? '' : 'disabled'}>시작 ▶</button></div>`;
   }
   function viewS1() {
     const s = st.s1, all = PARTS.every((_, i) => s.checks.includes(i));
