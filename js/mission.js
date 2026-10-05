@@ -13,7 +13,10 @@
   const TURN_SPEED = 5;                        // 오른쪽 제자리 회전 DCL = 0x10 + 5, DCR = 0x20 + 5
   const PAUSE_MS = 500;                        // 동작 사이 정지
   const T_DEFAULT = 6.0, T_MIN = 1, T_MAX = 20, T_SUGGEST = 0.3;
-  const TIME_TOL = 0.05;                       // 시간 답 허용 오차(초)
+  const TIME_TOL = 0.05;
+  // 출발 보정: 짧게 여러 번 돌면 출발할 때마다 바퀴가 빨라지는 시간만큼 덜 돎 → 도형 주행의 회전마다 더함
+  //   ② '4번 나눠 돌기'에서 맞춤(2026.10.5. 실물: 한 바퀴 시간 ÷ 4로 90°보다 덜 돎)
+  const COMP_DEFAULT = 0.1, COMP_MAX = 0.6;                       // 시간 답 허용 오차(초)
   const L_CHOICES = [0.5, 1.0, 1.5, 2.0];      // 변 길이(직진 시간, 초)
   // 조립도(assembly/): 부품 목록·단계 문구는 js/assembly-steps.js, 3D는 assembly/assembly-viewer.js
   const ASM = window.ASM_STEPS;
@@ -37,7 +40,7 @@
   const RELAY_KEY = 'neobot-relay-v1';         // drive.js 이어달리기 기록(기록 화면에서 읽기만)
 
   const fresh = () => ({
-    grade: null, view: 'start', T: null, Ttry: T_DEFAULT, spun: false, s2msg: '',
+    grade: null, view: 'start', T: null, Ttry: T_DEFAULT, spun: false, s2msg: '', comp: COMP_DEFAULT, split: '',
     done: {}, s1: { checks: [], phase: 'parts', astep: 0, fwd: '', turn: '', straight: '', msg: '', wheel: '' }, shapes: {},
     s4: { sub: 'exp', pred: '', expRan: false, result: '', sumSeen: false }, m1: {}, adv: { card: null, review: 0 },
   });
@@ -70,6 +73,7 @@
       if (!Array.isArray(st.s1.checks)) st.s1.checks = [];
       st.T = st.T > 0 ? clampT(st.T) : null;
       st.Ttry = st.Ttry > 0 ? clampT(st.Ttry) : T_DEFAULT;
+      st.comp = Number.isFinite(+st.comp) ? Math.max(0, Math.min(COMP_MAX, Math.round(st.comp * 100) / 100)) : COMP_DEFAULT;
       delete st.team;                            // 예전 저장값의 모둠 번호는 버림
       if (!GRADES[st.grade]) st.view = 'start';
       if (!['start', 's1', 's2', 's3', 's4', 's5', 'adv'].includes(st.view)) st.view = 'start';
@@ -122,7 +126,7 @@
     const steps = [];
     for (let i = 0; i < n; i++) {
       steps.push({ ...fwd(L), on: mark(i, 'move') }, { ...pause(), on: mark(i, 'pause', false) },
-                 { ...right(t), on: mark(i, 'turn') }, { ...pause(), on: mark(i, 'pause', true) });
+                 { ...right(t + st.comp), on: mark(i, 'turn') }, { ...pause(), on: mark(i, 'pause', true) });
     }
     return steps;
   }
@@ -250,7 +254,8 @@
         <div class="blk tr">오른쪽 돌기 <input class="num sm" id="tt-${id}" value="${s.tt}" inputmode="decimal" autocomplete="off" data-code="tt" data-id="${id}"> 초</div>
       </div></div>
       <div class="fb no" id="hint-${id}">${cs.hint}</div>
-      <div class="row"><button class="btn mint big" id="drive-${id}" data-act="drive" data-id="${id}" ${cs.ready && !busy ? '' : 'disabled'}>주행 ▶</button></div>`;
+      <div class="row"><button class="btn mint big" id="drive-${id}" data-act="drive" data-id="${id}" ${cs.ready && !busy ? '' : 'disabled'}>주행 ▶</button>
+        <span class="guide" style="margin:0">돌 때마다 출발 보정 +${st.comp.toFixed(2)}초 자동</span></div>`;
     if (!s.ran) return h;
     h += `<div class="q"><div class="qt">출발점에서 얼마나 떨어졌나요?</div><div class="stars">
       ${[[3, '★★★ 한 뼘 안'], [2, '★★ 두 뼘 안'], [1, '★ 그 밖']].map(([v, t]) => `<button class="pick ${s.star === v ? 'sel' : ''}" data-act="star" data-id="${id}" data-v="${v}">${t}</button>`).join('')}</div></div>`;
@@ -363,6 +368,13 @@
         <button class="pick" data-act="judge" data-v="more">더 돎</button></div></div>` : ''}
       <div class="fb yes" style="text-align:center">${st.s2msg}</div>
       ${st.T ? `<div class="note" style="text-align:center;font-size:1.3rem">우리 로봇 한 바퀴 = ${fmtT(st.T)}초</div>` : ''}
+      ${st.T ? `<div class="q ${st.split === 'ok' ? 'ok' : ''}"><div class="qt">2. 4번 나눠 돌기 — ${fmtT(st.T)}초 ÷ 4씩 4번</div>
+        <p class="guide" style="margin:4px 0">짧게 여러 번 돌면 출발할 때마다 조금씩 덜 돌아요 → 출발 보정으로 맞추기</p>
+        <div class="row"><button class="btn mint big" data-act="splitRun" ${busy ? 'disabled' : ''}>4번 나눠 한 바퀴 ↻</button>
+          <span class="guide" style="margin:0">출발 보정 +${st.comp.toFixed(2)}초</span></div>
+        ${st.split ? `<div class="qt">출발 표시로 돌아왔나요?</div><div class="row">
+          ${[['L2', '많이 덜 돎'], ['L1', '조금 덜 돎'], ['ok', '딱 맞음'], ['M1', '조금 더 돎'], ['M2', '많이 더 돎']].map(([k, t]) => `<button class="pick ${st.split === k ? 'sel' : ''}" data-act="splitAns" data-v="${k}">${t}</button>`).join('')}</div>` : ''}
+      </div>` : ''}
       ${nextBtn(2)}</div>`;
   }
   function viewS3() {
@@ -479,7 +491,7 @@
     let relay = null;
     try { relay = JSON.parse(localStorage.getItem(RELAY_KEY) || 'null'); } catch (e) {}
     const stars = (id) => st.shapes[id] && st.shapes[id].star ? '★'.repeat(st.shapes[id].star) : '–';
-    const rows = [['학년', GRADES[st.grade] || '–'], ['한 바퀴 시간', st.T ? fmtT(st.T) + '초' : '–'],
+    const rows = [['학년', GRADES[st.grade] || '–'], ['한 바퀴 시간', st.T ? fmtT(st.T) + '초' : '–'], ['출발 보정', '+' + st.comp.toFixed(2) + '초'],
       ['완료 단계', STAGES.filter(([k]) => st.done['s' + k]).map(([, t]) => t).join(' ') || '–'],
       ['정사각형', stars('sq')], ['정삼각형', stars('tri')], ['정육각형', stars('hex')],
       ...[...CARDS, 'star'].filter(id => st.shapes[id] && st.shapes[id].star).map(id => [SHAPES[id].name, stars(id)]),
@@ -523,9 +535,21 @@
     adj: (d) => { st.Ttry = clampT(st.Ttry + parseFloat(d.v)); st.s2msg = ''; save(); render(); },
     spin: async () => { st.s2msg = ''; if (await run([right(st.Ttry)])) { st.spun = true; commit(); } },
     judge: (d) => {
-      if (d.v === 'ok') { st.T = st.Ttry; st.done.s2 = true; st.s2msg = '저장!'; }
+      if (d.v === 'ok') { if (st.T !== st.Ttry) st.split = ''; st.T = st.Ttry; st.s2msg = '저장! → 아래 2번'; }
       else { st.Ttry = clampT(st.Ttry + (d.v === 'less' ? T_SUGGEST : -T_SUGGEST)); st.s2msg = `${fmtT(st.Ttry)}초로 바꿨어요 → 다시 [제자리 한 바퀴]`; }
       st.spun = false; commit();
+    },
+    splitRun: async () => {
+      st.s2msg = '';
+      const t = st.T / 4 + st.comp, steps = [];
+      for (let i = 0; i < 4; i++) steps.push(right(t), pause());
+      if (await run(steps)) { if (!st.split || st.split === 'ok') st.split = 'asked'; commit(); }
+    },
+    splitAns: (d) => {
+      const step = { L2: 0.08, L1: 0.03, M1: -0.03, M2: -0.08 }[d.v];
+      if (step) { st.comp = Math.max(0, Math.min(COMP_MAX, Math.round((st.comp + step) * 100) / 100)); st.split = 'asked'; st.s2msg = `출발 보정 +${st.comp.toFixed(2)}초 → 다시 [4번 나눠 한 바퀴]`; }
+      else { st.split = 'ok'; st.done.s2 = true; st.s2msg = ''; }
+      commit();
     },
     check: (d) => check(d.key),
     help: (d) => { qSpec(d.key).Q.help = true; save(); render(); },
