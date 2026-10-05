@@ -21,7 +21,7 @@
   const card = (i) => `assembly/cards/step${String(i + 1).padStart(2, '0')}.png`;
   const GRADES = { e5: '초5', e6: '초6', m1: '중1' };
   const SHAPES = {
-    sq: { n: 4, turn: 90, name: '정사각형', div: true },
+    sq: { n: 4, turn: 90, name: '정사각형' },
     tri: { n: 3, turn: 120, name: '정삼각형' },
     hex: { n: 6, turn: 60, name: '정육각형' },
     p5: { n: 5, turn: 72, name: '정오각형' },
@@ -235,9 +235,12 @@
     let h = `<h2>${c.name}</h2><p class="guide">로봇은 꼭짓점에서 <b>오른쪽</b>으로 돌아요.</p>`;
     h += qHTML(id + '.angle', `${c.name} 꼭짓점에서 로봇이 도는 각은?`, '°');
     if (!s.q.angle.ok) return h;
-    if (c.div) { h += qHTML(id + '.div', '한 번 도는 시간 = 한 바퀴 시간 ÷ (  )', ''); if (!s.q.div.ok) return h; }
-    h += qHTML(id + '.time', `한 번 도는 시간은? <span style="color:var(--mut);font-weight:500">(한 바퀴 ${fmtT(st.T)}초)</span>`, '초');
-    if (!s.q.time.ok) return h;
+    // 소수 나눗셈은 초등에 어려움 → 학생은 '÷ 몇'까지만 답하고 시간은 앱이 계산해 보여 줌(2026.10.5.)
+    const laps = c.laps || 1, whole = laps > 1 ? '두 바퀴 시간' : '한 바퀴 시간';
+    h += qHTML(id + '.div', `한 번 도는 시간 = ${whole} ÷ (  )`, '');
+    if (!s.q.div.ok) return h;
+    h += `<div class="note">한 번 도는 시간 = ${laps > 1 ? `${fmtT(st.T)} × 2` : fmtT(st.T)}초 ÷ ${c.n} = <span style="font-size:1.4em">${turnTime(id).toFixed(2)}초</span><br>
+      <span style="font-weight:500;font-size:.9em">↓ 아래 코드 '오른쪽 돌기' 칸에 넣기</span></div>`;
     const cs = codeState(id);
     h += `<div class="code">
       <div class="blk start">▶ 시작</div>
