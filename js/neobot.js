@@ -124,7 +124,19 @@
       if (++writeFails > 30) disconnect('전송 오류');
       return;
     }
-    finally { writing = false; }
+    finally {
+      writing = false;
+      if (flushPending) { flushPending = false; tick(); }   // 보내는 중에 바뀐 값은 끝나자마자 바로
+    }
+  }
+  // 모터 값이 바뀌면 32ms 주기를 기다리지 않고 바로 보냄 → 출발·정지 시각 오차(최대 32ms) 줄이기
+  // (회전 0.8초에서 32ms ≈ 3.5°, 시작·끝 두 번이라 한 번 돌 때 최대 7° 차이가 났음)
+  let flushPending = false;
+  function sendNow() {
+    if (!writer) return;
+    if (writing) { flushPending = true; return; }
+    clearInterval(timer); timer = setInterval(tick, PERIOD_MS);   // 다음 주기도 지금부터 32ms 뒤
+    tick();
   }
 
   async function openPort(p) {
@@ -190,7 +202,12 @@
     if (s === 0) return 0;
     return s > 0 ? 0x10 + s : 0x20 + (-s);
   }
-  function setMotors(left, right) { out.DCL = motorByte(left); out.DCR = motorByte(right); }
+  function setMotors(left, right) {
+    const l = motorByte(left), r = motorByte(right);
+    if (l === out.DCL && r === out.DCR) return;
+    out.DCL = l; out.DCR = r;
+    if (connected) sendNow();
+  }
   // 음 이름 1~12(도~시), 옥타브값 0~5 → SND
   function noteValue(note, octave) { return note > 0 ? Math.min(65, note + 12 * octave) : 0; }
 
