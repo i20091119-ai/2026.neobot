@@ -1,0 +1,172 @@
+# 인수인계 — 네오봇 3D 조립도 이식 (assembly)
+
+작성 2026.10.5. · Cowork 세션 → Claude Code
+대상 저장소 `i20091119-ai/2026.neobot` · 작업 전 저장소 루트 `HANDOFF.md`도 확인
+
+---
+
+## 1. 목적
+
+- 「② 조립하고 코딩하는 네오봇 정다각형 주행」 수업에서 학생이 **앱 화면만 보고 로봇을 조립**하게 함
+- 앱 미션 흐름(사양서 `네오봇_미션앱_사양서.md`)의 **① 조립 단계**를 이 조립도로 구성
+- 3D 모델을 단계별로 보여 주고, 학생이 마우스·손가락으로 돌려 볼 수 있음
+- 네트워크 없이 동작(부품 라이브러리 일부를 동봉)
+
+## 2. 확정된 로봇 설계 (v2)
+
+| 항목 | 결정 |
+|---|---|
+| 구동 | 큰 바퀴 2개, 차동 구동(제자리 회전) |
+| 받침 | **노란 굽은1×11 2개를 두 모터 안쪽 면에 고정** → 앞쪽 가운데 1점이 바닥에 닿아 미끄러짐 |
+| 받침을 모터에 단 이유 | 바닥에서 걸리는 힘이 컨트롤러-모터 스터드 결합을 벌리지 않게(힘이 모터-빔-모터 안에서 끝남) |
+| 두 빔 연결 | 고정핀 2개로 서로 묶음 → 두 모터가 한 덩어리 |
+| 번호판 | **없음**(사용자 결정 2026.10.5.) |
+| LED 블록 | **포함**(10단계) — 컨트롤러 윗면 오른쪽 띠 뒤쪽, 선은 OUT3. 술래잡기 [술래] 버튼이 OUT1~3=255를 보내므로 술래 로봇만 불이 켜짐 |
+| 앞·뒤 | 노란 받침 쪽 = 앞 / 건전지 서랍(PULL) 쪽 = 뒤 |
+
+### 부품 (총 18개, 휠·타이어 따로 셈)
+
+| 부품(키트 이름) | 수 | 모델 파일 | 비고 |
+|---|---|---|---|
+| 녹색 컨트롤러 | 1 | `nb_controller.dat` | 전용 부품(실측 근사) |
+| 모터 블록 | 2 | `nb_motor.dat` | 전용 부품(실측 근사) |
+| 고정핀 | 6 | `2780.dat` | LDraw 공식(Technic Pin with Friction) |
+| 굽은1×11 | 2 | `32009.dat` | LDraw 공식(Technic Beam 3 x 3.8 x 7 Liftarm Bent 45 Double) |
+| 축48 | 2 | `3706.dat` | LDraw 공식(Technic Axle 6), 실측 48mm 확인 |
+| 큰 휠 + 큰 타이어 | 각 2 | `nb_wheel_big.dat` | 전용 부품, 타이어 표기 56×9(지름 56mm·폭 9mm) |
+| LED 블록 | 1 | `nb_led.dat` | 전용 부품(사진 기반 근사): 노란 2×4 몸통 1브릭 높이 + 투명 윗덮개, 바닥 2×4 튜브, 긴 옆면 테크닉 구멍 2개(선 쪽), 선은 짧은 끝 |
+| (모터 선) | – | `nb_cable_L.dat`, `nb_cable_R.dat`, `nb_cable_LED.dat` | 그림용, 부품 아님 |
+
+### 실측값
+
+- 컨트롤러: 10×10 스터드(80×80mm), 높이 약 3cm, 윗면 좌우 2×10 스터드 띠, 옆면 테크닉 구멍 7×3
+  - 뒤 끝면: L·IN3·OUT3·R 단자 + 건전지 서랍 / 앞 끝면: IN1·IN2·OUT1·OUT2 단자
+- 모터 블록: 4.5×3×3cm, 윗면 4×6 스터드, 바닥 3×5 튜브, 양 옆면 구멍 + 노란 십자 출력축(관통)
+- 테크닉 구멍 간격 8mm(레고 호환)
+
+## 3. 패키지 구성
+
+```
+neobot-assembly/
+├─ HANDOFF_조립도.md       이 문서
+├─ demo.html               단독 실행 예시(좌: 단계 설명 / 우: 3D)
+├─ assembly-viewer.js      뷰어 모듈(ES module)
+├─ steps.json              단계 데이터(제목·부품·설명·카메라·분해 거리·라벨)
+├─ ldraw/
+│  ├─ robot.ldr            조립 모델, 10단계(0 STEP 구분)
+│  └─ lib/                 LDraw 라이브러리 일부(이 모델에 필요한 66개만) + 전용 부품
+│     ├─ parts/            2780·32009·3706·nb_*.dat, parts/s/
+│     ├─ p/                기본 도형(stud, 4-4cyli 등), p/8, p/48
+│     └─ colors/ldcfgalt.ldr
+├─ thumbs/*.png            부품 썸네일(steps.json의 key와 같은 이름)
+├─ cards/step01~10.png     단계 그림(앱 대체 화면·인쇄용)
+├─ vendor/three/           three.js r160(MIT): three.module.min.js, LDrawLoader.js, OrbitControls.js
+└─ tools/gen_parts.py      전용 부품 .dat 생성 스크립트(치수 수정 시 재생성)
+```
+
+## 4. 저장소에 넣는 방법
+
+1. 이 폴더를 저장소 루트에 `assembly/`로 복사
+2. 로컬 서버로 `assembly/demo.html` 열어 동작 확인
+   ```
+   python3 -m http.server 8000   → http://localhost:8000/assembly/demo.html
+   ```
+3. 미션 화면(`mission.html`, 사양서 ① 조립 단계)에 뷰어 삽입
+
+```html
+<script type="importmap">{"imports":{"three":"./assembly/vendor/three/three.module.min.js"}}</script>
+<div id="asmView" style="width:100%;height:60vh"></div>
+<script type="module">
+import { createAssemblyViewer } from './assembly/assembly-viewer.js';
+const v = await createAssemblyViewer(document.getElementById('asmView'), {
+  base: './assembly/',
+  onStep: (i, st, n) => { /* 제목·부품·설명 표시, 이전/다음 버튼 상태 */ },
+});
+// v.next(), v.prev(), v.setStep(i), v.step, v.data, v.dispose()
+</script>
+```
+
+- importmap은 페이지마다 하나만 둘 수 있음 → 미션 화면에 이미 importmap이 있으면 `three` 항목만 합치기
+- `base`는 페이지 기준 상대 경로, 끝에 `/` 필수
+
+## 5. 뷰어 동작 (`assembly-viewer.js`)
+
+- `LDrawLoader`로 `robot.ldr` 로드 → `model.rotation.x = π`(LDraw는 y가 아래)
+- 각 부품 객체의 `userData.buildingStep`(r160 기준 속성 이름) = `0 STEP` 순번
+  - `setStep(i)`: buildingStep ≤ i만 보이기
+  - 이번 단계(= i) 부품은 `explode` 만큼 띄워서 "끼우기 직전" 위치로 표시
+  - 이전 단계 부품은 `fade: true`이면 반투명(불투명 재질만 opacity 0.42)
+- 카메라: 보이는 부품 상자 기준으로 `view.az`(좌우 각도), `view.el`(높이 각도), `view.zoom` 적용
+  - az 0 = 로봇 정면(받침 쪽), az 180 = 뒤
+- `labels`: LDraw 좌표 `at`을 화면 좌표로 투영해 빨간 원 라벨 표시(7단계 L·R 단자)
+- OrbitControls: 회전·확대만(이동 끔)
+- 재질은 모두 양면(DoubleSide) — 전용 부품이 BFC 미인증이라 필요
+
+## 6. 단계 데이터 (`steps.json`)
+
+| # | 제목 | 새 부품 | 카메라 | 분해(LDU) |
+|---|---|---|---|---|
+| 1 | 오른쪽 모터 준비 | 모터 1, 고정핀 2 | az45 el25 | – |
+| 2 | 노란 받침 ① | 굽은1×11 1 | az45 el25 | x+60 |
+| 3 | 연결 고정핀 | 고정핀 2 | az45 el25 | – |
+| 4 | 노란 받침 ② | 굽은1×11 1 | az45 el25 | x+50 |
+| 5 | 왼쪽 모터 | 모터 1, 고정핀 2 | az45 el25 | x+90 |
+| 6 | 컨트롤러 올리기 | 컨트롤러 1 | az35 el28 | y−80(위로) |
+| 7 | 선 연결 | 없음 | az200 el28 zoom1.15 | – (L·R 라벨) |
+| 8 | 축 끼우기 | 축48 2 | az40 el22 | – |
+| 9 | 바퀴 끼우기 | 큰 휠+타이어 2 | az40 el22 | – |
+| 10 | 술래 표시등(LED) | LED 블록 1 | az215 el32 zoom1.05 | y−60(위로), OUT3 라벨 |
+
+- 문구는 학생용으로 짧게 유지(사용자 선호: 건조한 단어 위주)
+- 전체 부품 체크 목록은 `totals` 사용 → 사양서 ① 조립의 "부품 체크" 화면에 그대로 씀
+- 순서 이유: 받침을 먼저 달고 컨트롤러를 나중에 올림(컨트롤러를 먼저 올리면 두 모터 사이에 손이 안 들어감)
+
+## 7. 좌표·모델 규칙 (수정할 때 필요)
+
+- 단위 LDU: 1스터드 = 20 LDU = 8mm, 브릭 높이 24 LDU, 스터드 높이 4
+- LDraw 좌표: x 오른쪽, **y 아래**, z 뒤(+). 로봇 정면은 −z
+- **로봇의 왼쪽 = +x** (정면에서 보면 화면 오른쪽) → L 모터·L 단자가 +x 쪽
+- 배치(robot.ldr)
+  - 컨트롤러: 원점, 윗면 y=0, 바닥 y=72
+  - 모터: 중심 x=±60, 윗면 y=72, 중심 z=40, Y축 180° 회전(선이 뒤 +z로)
+  - 출력축: (±100, 108, 20) → 바퀴 축 높이 y=108, 바닥 y=178(타이어 반지름 70)
+  - LED 블록: 바닥 중심 (−80, 0, 60), 컨트롤러 윗면 오른쪽 2×10 띠 뒤쪽 2×4 차지, 선 쪽이 +z(뒤)
+  - 노란 받침: 중심 x=±10, 피벗 (±10, 88, −120), 행렬 `0 1 0 1 0 0 0 0 -1` → 앞쪽 발끝 바닥 y≈178
+  - 고정핀: 모터-빔 (±20, 88, 20)·(±20, 88, 0) / 빔-빔 (0, 88, −40)·(0, 88, −80)
+- 전용 부품 치수 바꾸기: `tools/gen_parts.py` 수정 → `python3 tools/gen_parts.py` → `ldraw/lib/parts/nb_*.dat` 갱신
+- 공식 부품을 추가할 때: 그 `.dat`와 하위 파일(p/, parts/s/)을 `ldraw/lib`에 함께 넣어야 오프라인 동작
+  - 원본: https://github.com/gkjohnson/ldraw-parts-library (LDraw 공식 라이브러리 사본)
+  - 빠진 파일은 브라우저 콘솔 404로 확인(parts/ → p/ 순서로 찾으므로 일부 404는 정상, 최종 로드 실패만 문제)
+
+## 8. 배포 시 주의
+
+- **GitHub Pages(https)**: 그대로 동작
+- **폴더판(file://, Run.bat)**: `fetch()`로 steps.json·.ldr을 읽기 때문에 file://에서는 크롬·엣지가 막음
+  - 해결: `Run.bat`의 실행 옵션에 `--allow-file-access-from-files` 추가(전용 프로필 창이라 영향 범위 작음)
+  - 또는 폴더판에 작은 로컬 서버 포함(설치 부담 생김) → 첫 번째 방법 권장
+- WebGL 미지원·저사양 노트북 대비: 실패하면 `cards/stepNN.png` 이미지로 대체 표시
+
+## 9. 남은 결정·확인
+
+1. **실물 확인(시제품 1대)**
+   - 모터 안쪽 면 구멍 배치와 고정핀 위치("노란 축 구멍 바로 위 + 그 앞 구멍")
+   - 노란 받침 발끝이 바닥에 닿는 높이(현재 계산상 바퀴 바닥과 같은 높이)
+   - 바퀴와 받침 사이 간섭 여부
+   - 다르면 `robot.ldr` 좌표·`steps.json` 문구 수정
+2. **LED 블록(10단계)**: 사진 기반 근사 모델 → 실물 높이·LED 위치·구멍 위치 확인
+   - 장착 위치(윗면 오른쪽 띠 뒤쪽)와 OUT3 선 길이가 맞는지
+   - 앱 술래 버튼은 이미 OUT1~3 = 255 송신(drive.js 술래잡기) → 수정 불필요
+   - 블록코딩에서 쓰려면 'OUT3에 연결한 LED 켜기'로 안내
+3. 조립 완료 후 앱 [바퀴 시험](1초 전진) 화면으로 연결 — 사양서 ① 조립 3번
+
+## 10. 시험 방법
+
+- 로컬 서버 + Playwright(크로미움, `--use-gl=swiftshader`)로 demo.html 열기
+- 외부 요청 차단 상태에서 오류 0건 확인 완료(2026.10.5.) — 1·7·9단계 화면 확인
+- 확인 항목: 단계 이동, 분해 위치, 반투명, L·R 라벨 위치, 창 크기 변경
+
+## 11. 출처·라이선스
+
+- three.js r160 — MIT (`vendor/three/LICENSE`)
+- LDraw Parts Library — CC BY 2.0 → 앱 하단 또는 정보 화면에 "부품 모델: LDraw Parts Library (ldraw.org), CC BY 2.0" 표기
+- 전용 부품(컨트롤러·모터·바퀴·선)은 실측 기반 자체 제작

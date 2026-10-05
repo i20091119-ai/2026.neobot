@@ -10,6 +10,7 @@
 | `drive.html` | **수학 에너지 주행** — 모드: 자유 주행 / 술래잡기(잡혔어요·술래·2분·최고 속도 12) / 이어달리기(각도 문제 → 출발 속도 8·9·10). `?mode=relay&grade=e5`로 미리 선택 |
 | `blocks.html` | **네오봇 블록코딩** — 엔트리 네오봇 블록(센서·모터·LED·서보·소리) + 흐름·판단·계산·변수 |
 | `mission.html` | **정다각형 미션(수업용)** — 시작(학년) → ① 조립 → ② 한 바퀴 시간 → ③ 정사각형 → ④ 정삼각형·정육각형 → ⑤ 놀이, 심화(미션 카드·오각별·복습), 기록 |
+| `assembly/` | **3D 조립도** — three.js + LDraw 모델 10단계, 미션 ① 조립에서 사용(`assembly/HANDOFF_조립도.md`) |
 | `polygon.html` | **정다각형 미션** — 시간으로 거리·각도 제어: ① 거리 재기(정비례 그래프) ② 목표 정차 ③ 회전 맞추기 ④ 외각 열쇠 → 정다각형·오각별 주행 |
 
 ## 사용 방법
@@ -36,7 +37,7 @@
 `js/mission.js` 상단 상수
 - `FWD_SPEED`·`TURN_SPEED` 직진·회전 속도(기본 5), `PAUSE_MS` 동작 사이 정지(0.5초)
 - `T_DEFAULT` 한 바퀴 시간 기본값(6.0초), `T_SUGGEST` 덜 돎·더 돎 조정 폭(0.3초), `TIME_TOL` 시간 답 허용 오차(0.05초)
-- `PARTS` 부품 목록, `PHOTOS` 조립 사진(`assets/assembly/1~5.jpg`에 넣으면 표시, 없으면 사진 단계 생략)
+- 부품 목록·조립 단계 = `assembly/steps.json`(수정 후 `python3 assembly/tools/steps_to_js.py`)
 
 `js/drive.js` 모드 상수: `TAG_MAX_SPEED`(12), `TAG_SECONDS`(120), `RELAY_SPEEDS`(0~2→8, 3~5→9, 6↑→10)
 
@@ -48,4 +49,5 @@
 ## 출처
 - 문제 은행 `js/problems.js`, 이미지·폰트·효과음: 2026newaltinopro1 저장소에서 재사용
 - 블록 편집기: Google Blockly 11 (Apache-2.0, `vendor/blockly`)
+- 3D 조립도: three.js r160 (MIT), 부품 모델 LDraw Parts Library (ldraw.org, CC BY 2.0)
 - 프로토콜: entrylabs/entry-hw, entrylabs/entryjs
