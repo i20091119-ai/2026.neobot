@@ -21,7 +21,7 @@
   const card = (i) => `assembly/cards/step${String(i + 1).padStart(2, '0')}.png`;
   const GRADES = { e5: '초5', e6: '초6', m1: '중1' };
   const SHAPES = {
-    sq: { n: 4, turn: 90, name: '정사각형', div: true },
+    sq: { n: 4, turn: 90, name: '정사각형' },
     tri: { n: 3, turn: 120, name: '정삼각형' },
     hex: { n: 6, turn: 60, name: '정육각형' },
     p5: { n: 5, turn: 72, name: '정오각형' },
@@ -38,7 +38,7 @@
 
   const fresh = () => ({
     grade: null, view: 'start', T: null, Ttry: T_DEFAULT, spun: false, s2msg: '',
-    done: {}, s1: { checks: [], phase: 'parts', astep: 0, fwd: '', turn: '', msg: '', wheel: '' }, shapes: {},
+    done: {}, s1: { checks: [], phase: 'parts', astep: 0, fwd: '', turn: '', straight: '', msg: '', wheel: '' }, shapes: {},
     s4: { sub: 'exp', pred: '', expRan: false, result: '', sumSeen: false }, m1: {}, adv: { card: null, review: 0 },
   });
   let st = fresh();
@@ -235,9 +235,12 @@
     let h = `<h2>${c.name}</h2><p class="guide">로봇은 꼭짓점에서 <b>오른쪽</b>으로 돌아요.</p>`;
     h += qHTML(id + '.angle', `${c.name} 꼭짓점에서 로봇이 도는 각은?`, '°');
     if (!s.q.angle.ok) return h;
-    if (c.div) { h += qHTML(id + '.div', '한 번 도는 시간 = 한 바퀴 시간 ÷ (  )', ''); if (!s.q.div.ok) return h; }
-    h += qHTML(id + '.time', `한 번 도는 시간은? <span style="color:var(--mut);font-weight:500">(한 바퀴 ${fmtT(st.T)}초)</span>`, '초');
-    if (!s.q.time.ok) return h;
+    // 소수 나눗셈은 초등에 어려움 → 학생은 '÷ 몇'까지만 답하고 시간은 앱이 계산해 보여 줌(2026.10.5.)
+    const laps = c.laps || 1, whole = laps > 1 ? '두 바퀴 시간' : '한 바퀴 시간';
+    h += qHTML(id + '.div', `한 번 도는 시간 = ${whole} ÷ (  )`, '');
+    if (!s.q.div.ok) return h;
+    h += `<div class="note">한 번 도는 시간 = ${laps > 1 ? `${fmtT(st.T)} × 2` : fmtT(st.T)}초 ÷ ${c.n} = <span style="font-size:1.4em">${turnTime(id).toFixed(2)}초</span><br>
+      <span style="font-weight:500;font-size:.9em">↓ 아래 코드 '오른쪽 돌기' 칸에 넣기</span></div>`;
     const cs = codeState(id);
     h += `<div class="code">
       <div class="blk start">▶ 시작</div>
@@ -252,7 +255,8 @@
     h += `<div class="q"><div class="qt">출발점에서 얼마나 떨어졌나요?</div><div class="stars">
       ${[[3, '★★★ 한 뼘 안'], [2, '★★ 두 뼘 안'], [1, '★ 그 밖']].map(([v, t]) => `<button class="pick ${s.star === v ? 'sel' : ''}" data-act="star" data-id="${id}" data-v="${v}">${t}</button>`).join('')}</div></div>`;
     if (s.star) h += `<div class="note">도는 각 합 ${c.turn}° × ${c.n} = ${c.turn * c.n}° → ${c.laps ? '두 바퀴' : '한 바퀴'} → 출발점</div>`;
-    if (s.star === 1) h += `<div class="row"><button class="btn sun" data-act="goto" data-v="s2">한 바퀴 시간 다시 맞추기</button></div>`;
+    if (s.star && s.star < 3) h += `<div class="row"><button class="btn ghost" data-act="fixStraight">똑바로 가기 다시 맞추기</button>
+      <button class="btn sun" data-act="goto" data-v="s2">한 바퀴 시간 다시 맞추기</button></div>`;
     return h;
   }
   async function drive(id) {
@@ -295,7 +299,7 @@
         <ol class="asmlines">${stp.lines.map(l => `<li>${l}</li>`).join('')}</ol>
         <div class="row asmnav"><button class="btn ghost big" data-act="astep" data-v="-1" ${i ? '' : 'disabled'}>◀ 이전</button>
           ${i < ASM_N - 1 ? `<button class="btn mint big" data-act="astep" data-v="1">다음 ▶</button>` : `<button class="btn mint big" data-act="s1phase" data-v="test">조립 끝 → 바퀴 시험 ▶</button>`}</div>
-        <p class="guide" style="font-size:.95rem">${asmFail ? '그림으로 보기' : '마우스로 돌려 보기 · 휠로 확대'}</p>`;
+        <p class="guide" style="font-size:.95rem">${asmFail ? '그림으로 보기' : '떠 있는 부품 → 빨간 점선 따라 끼우기 · 마우스로 돌려 보기'}</p>`;
       return `<div class="asmgrid"><div class="panel">${h}${left}</div><div class="panel asmview">
         ${asmFail ? `<img class="asmcard" src="${card(i)}" alt="${stp.title}">` : '<div id="asmSlot" class="asmslot"></div>'}</div></div>`;
     }
@@ -313,7 +317,16 @@
           ${[['ok', '오른쪽 ↻ (시계 방향)'], ['left', '왼쪽 ↺']].map(([k, t]) => `<button class="pick ${s.turn === k ? 'sel' : ''}" data-act="turnAns" data-v="${k}">${t}</button>`).join('')}</div>` : ''}</div>`;
     }
     h += `<div class="fb yes">${s.msg}</div>`;
-    if (s.turn === 'ok') h += '<div class="note">바퀴 시험 통과!</div>';
+    if (s.turn === 'ok') {
+      const t = NB.motorCal.trim;
+      h += `<div class="q ${s.straight === 'ok' ? 'ok' : ''}"><div class="qt">3. 똑바로 가기 — 앞으로 3초</div>
+        <div class="row"><button class="btn mint big" data-act="wheelStraight" ${busy ? 'disabled' : ''}>앞으로 3초 ▶</button>
+          <span class="guide" style="margin:0">보정: ${t ? (t > 0 ? '오른쪽' : '왼쪽') + ' 바퀴 −' + Math.abs(t).toFixed(1) : '없음'}</span></div>
+        ${s.straight ? `<div class="qt">어떻게 갔나요?</div><div class="row">
+          ${[['L2', '◀◀ 왼쪽으로 많이'], ['L1', '◀ 왼쪽으로 조금'], ['ok', '똑바로'], ['R1', '오른쪽으로 조금 ▶'], ['R2', '오른쪽으로 많이 ▶▶']].map(([k, tx]) => `<button class="pick ${s.straight === k ? 'sel' : ''}" data-act="straightAns" data-v="${k}">${tx}</button>`).join('')}</div>` : ''}
+        <div class="help">바퀴가 모터에 닿아 있지 않은지, 타이어가 끝까지 끼워졌는지 먼저 확인</div></div>`;
+    }
+    if (s.straight === 'ok') h += '<div class="note">바퀴 시험 통과!</div>';
     return `<div class="panel" style="max-width:1000px;margin:0 auto">${h}${nextBtn(1)}</div>`;
   }
   // 3D 조립도: 화면을 다시 그려도 WebGL 캔버스가 지워지지 않게 같은 요소를 옮겨 붙임
@@ -331,7 +344,8 @@
     if (viewerP) return;
     if (!webglOK()) { asmFail = true; render(); return; }
     asmHost.innerHTML = '<div class="asmload">조립도 불러오는 중…</div>';
-    viewerP = import('../assembly/assembly-viewer.js')
+    viewerP = import('../assembly/assembly-viewer.js?v=20261005b')  // ?v= 새 판이 바로 보이게(캐시 회피)
+
       .then(m => { asmHost.innerHTML = ''; return m.createAssemblyViewer(asmHost, { base: './assembly/', steps: ASM }); })
       .then(v => { viewer = v; v.setStep(st.s1.astep); })
       .catch(e => { console.warn('조립도 3D 실패 → 그림으로', e); asmFail = true; asmHost.innerHTML = ''; render(); });
@@ -415,7 +429,7 @@
 
   function updateDone() {
     const d = st.done;
-    if (st.s1.wheel === 'yes' || (st.s1.fwd === 'ok' && st.s1.turn === 'ok')) d.s1 = true;
+    if (st.s1.wheel === 'yes') d.s1 = true;
     if (sh('sq').star > 0) d.s3 = true;
     if (st.s4.sumSeen && (st.grade !== 'm1' || ['in3', 'in6', 'sum'].every(k => m1q(k).ok))) d.s4 = true;
   }
@@ -494,7 +508,16 @@
     turnAns: (d) => {
       const c = NB.motorCal, s1 = st.s1;
       if (d.v === 'left') { NB.setMotorCal({ ...c, swap: !c.swap }); s1.turn = 'asked'; s1.msg = '왼쪽·오른쪽 바꿈 → [오른쪽 돌기 1초] 다시'; }
-      else { s1.turn = 'ok'; s1.wheel = 'yes'; s1.msg = ''; }
+      else { s1.turn = 'ok'; s1.msg = ''; }
+      commit();
+    },
+    fixStraight: () => { if (busy) stopRun(); st.s1.phase = 'test'; st.s1.straight = ''; st.view = 's1'; save(); render(); window.scrollTo(0, 0); },
+    wheelStraight: async () => { st.s1.msg = ''; if (await run([fwd(3)])) { if (!st.s1.straight || st.s1.straight === 'ok') st.s1.straight = 'asked'; commit(); } },
+    straightAns: (d) => {
+      // 왼쪽으로 휨 = 오른쪽 바퀴가 빠름 → 오른쪽을 늦춤(trim +) / 오른쪽으로 휨 → 왼쪽을 늦춤(trim −)
+      const c = NB.motorCal, s1 = st.s1, step = { L2: 0.6, L1: 0.2, R1: -0.2, R2: -0.6 }[d.v];
+      if (step) { NB.setMotorCal({ ...c, trim: c.trim + step }); s1.straight = 'asked'; s1.msg = '바퀴 빠르기 조절 → [앞으로 3초] 다시'; }
+      else { s1.straight = 'ok'; s1.wheel = 'yes'; s1.msg = ''; }
       commit();
     },
     adj: (d) => { st.Ttry = clampT(st.Ttry + parseFloat(d.v)); st.s2msg = ''; save(); render(); },
