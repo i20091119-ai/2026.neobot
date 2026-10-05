@@ -85,19 +85,31 @@ export async function createAssemblyViewer(container, opts = {}) {
     }
     // 결합 안내 점선: guides = 부품이 들어갈 구멍(LDraw 좌표). 구멍 → 떠 있는 부품까지 점선 + 구멍에 빨간 점
     guideGroup.clear();
-    for (const g of st.guides || []) {
-      const a = new THREE.Vector3(...g), b = a.clone().add(exFor(g[0]));
-      const dir = b.clone().sub(a), len = dir.length(); dir.normalize();
+    // 구간 하나를 굵은 점선(원기둥 토막)으로
+    const dashLine = (a, b) => {
+      const dir = b.clone().sub(a), len = dir.length();
+      if (len < 0.01) return;
+      dir.normalize();
       const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-      for (let t = 0; t < len; t += DASH + GAP) {          // 굵은 점선(원기둥 토막)
+      for (let t = 0; t < len; t += DASH + GAP) {
         const l = Math.min(DASH, len - t);
         const m = new THREE.Mesh(dashGeo, dotMat);
         m.scale.set(1, l, 1); m.quaternion.copy(q);
         m.position.copy(a).addScaledVector(dir, t + l / 2); m.renderOrder = 999;
         guideGroup.add(m);
       }
-      const dot = new THREE.Mesh(dotGeo, dotMat); dot.position.copy(a); dot.renderOrder = 1000;
-      guideGroup.add(dot);
+    };
+    const addDot = (p) => { const dot = new THREE.Mesh(dotGeo, dotMat); dot.position.copy(p); dot.renderOrder = 1000; guideGroup.add(dot); };
+    for (const g of st.guides || []) {
+      if (g.path) {                                         // 선 연결: 선 따라 점선 → 끝(단자)에 빨간 점
+        const pts = g.path.map(p => new THREE.Vector3(...p));
+        for (let k = 1; k < pts.length; k++) dashLine(pts[k - 1], pts[k]);
+        addDot(pts[pts.length - 1]);
+        continue;
+      }
+      const a = new THREE.Vector3(...g), b = a.clone().add(exFor(g[0]));
+      dashLine(a, b);
+      addDot(a);
     }
     model.updateMatrixWorld(true);
     // 보이는 부품 기준으로 카메라 맞춤

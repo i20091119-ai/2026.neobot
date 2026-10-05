@@ -27,16 +27,36 @@
 
   // 모터 보정(조립에 따라 바퀴 방향이 다를 수 있음): 미션 ① 바퀴 시험에서 정하고 모든 화면에 적용
   //   flipL/flipR = 그 바퀴 앞·뒤 뒤집기(0x1n ↔ 0x2n), swap = 왼쪽·오른쪽 출력 바꾸기
+  //   trim = 똑바로 가기 보정(+면 오른쪽 바퀴를, −면 왼쪽 바퀴를 늦춤, ±3까지)
+  //     속도 5 기준 값 → 다른 속도에서는 비례(속도 10이면 2배만큼 늦춤)
+  //     모터 속도는 0~15 정수뿐이라 소수 보정은 32ms 패킷마다 s와 s−1을 섞어 평균을 맞춤
+  const TRIM_MAX = 3;
+  function normCal(c) {
+    c = c || {};
+    const t = Math.max(-TRIM_MAX, Math.min(TRIM_MAX, Math.round((+c.trim || 0) * 10) / 10));
+    return { flipL: !!c.flipL, flipR: !!c.flipR, swap: !!c.swap, trim: t };
+  }
   function motorCal() {
-    try { const o = JSON.parse(localStorage.getItem('nb-motor') || 'null'); if (o) return o; } catch (e) {}
-    return { flipL: false, flipR: false, swap: false };
+    try { return normCal(JSON.parse(localStorage.getItem('nb-motor') || 'null')); } catch (e) { return normCal(); }
   }
   let cal = motorCal();
-  function setMotorCal(c) { cal = { flipL: !!c.flipL, flipR: !!c.flipR, swap: !!c.swap }; try { localStorage.setItem('nb-motor', JSON.stringify(cal)); } catch (e) {} }
+  function setMotorCal(c) { cal = normCal(c); try { localStorage.setItem('nb-motor', JSON.stringify(cal)); } catch (e) {} }
+  const trimAcc = { L: 0, R: 0 };
+  function trimByte(b, cut, side) {
+    const s = b & 15, hi = b & 0xF0;
+    if (!cut || !s || (hi !== 0x10 && hi !== 0x20)) return b;
+    const target = Math.max(0, s - cut * s / 5), lo = Math.floor(target);
+    trimAcc[side] += target - lo;
+    let v = lo;
+    if (trimAcc[side] >= 1) { trimAcc[side] -= 1; v = lo + 1; }
+    return v ? hi + v : 0;
+  }
   const flipByte = (b) => (b >= 0x11 && b <= 0x1F) ? b + 0x10 : (b >= 0x21 && b <= 0x2F) ? b - 0x10 : b;
   function buildPacket() {
     const v = [out.OUT1, out.OUT2, out.OUT3, out.DCL, out.DCR, out.SND, out.FND, out.OPT].map(x => (x | 0) & 255);
     let l = v[3], r = v[4];
+    if (cal.trim > 0) r = trimByte(r, cal.trim, 'R');
+    else if (cal.trim < 0) l = trimByte(l, -cal.trim, 'L');
     if (cal.swap) [l, r] = [r, l];
     if (cal.flipL) l = flipByte(l);
     if (cal.flipR) r = flipByte(r);
