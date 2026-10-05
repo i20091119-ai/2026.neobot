@@ -25,8 +25,22 @@
   function emit(type, v) { listeners[type].forEach(f => { try { f(v); } catch (e) { console.error(e); } }); }
   function on(type, f) { listeners[type].push(f); }
 
+  // 모터 보정(조립에 따라 바퀴 방향이 다를 수 있음): 미션 ① 바퀴 시험에서 정하고 모든 화면에 적용
+  //   flipL/flipR = 그 바퀴 앞·뒤 뒤집기(0x1n ↔ 0x2n), swap = 왼쪽·오른쪽 출력 바꾸기
+  function motorCal() {
+    try { const o = JSON.parse(localStorage.getItem('nb-motor') || 'null'); if (o) return o; } catch (e) {}
+    return { flipL: false, flipR: false, swap: false };
+  }
+  let cal = motorCal();
+  function setMotorCal(c) { cal = { flipL: !!c.flipL, flipR: !!c.flipR, swap: !!c.swap }; try { localStorage.setItem('nb-motor', JSON.stringify(cal)); } catch (e) {} }
+  const flipByte = (b) => (b >= 0x11 && b <= 0x1F) ? b + 0x10 : (b >= 0x21 && b <= 0x2F) ? b - 0x10 : b;
   function buildPacket() {
     const v = [out.OUT1, out.OUT2, out.OUT3, out.DCL, out.DCR, out.SND, out.FND, out.OPT].map(x => (x | 0) & 255);
+    let l = v[3], r = v[4];
+    if (cal.swap) [l, r] = [r, l];
+    if (cal.flipL) l = flipByte(l);
+    if (cal.flipR) r = flipByte(r);
+    v[3] = l; v[4] = r;
     if (v[6] > 0) v[7] |= 8; // FND 사용 시 OPT bit3
     const sum = v.reduce((a, b) => a + b, 0) & 255;
     return new Uint8Array([0xCD, 0xAB, ...v, sum]);
@@ -199,7 +213,7 @@
   }
 
   window.Neobot = {
-    setSignals, get port() { return port; },
+    setSignals, get port() { return port; }, get motorCal() { return { ...cal }; }, setMotorCal,
     out, sensor, on, connect, autoConnect, disconnect, status, stopAll, resetOutputs,
     setMotors, motorByte, noteValue, buildPacket, parseRx, mountConnectButton,
     get connected() { return connected; },

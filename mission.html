@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>정다각형 미션</title>
 <link rel="stylesheet" href="css/app.css" />
+<script type="importmap">{"imports":{"three":"./assembly/vendor/three/three.module.min.js"}}</script>
 <style>
+  /* 노트북 화면 폭에 맞춰 글자 전체 확대(rem 기준) */
+  html{font-size:clamp(16px,1.4vw,24px)}
   body{background:linear-gradient(rgba(255,247,234,.6),rgba(255,247,234,.6)),url('assets/bg.png') center/cover no-repeat,var(--cream);min-height:100vh;display:flex;flex-direction:column}
   .title{font-size:1.2rem;font-weight:700}
   .tbadge{background:#e9fbf4;border:2px solid #b9ecdc;color:#1b8f6a;border-radius:999px;padding:6px 14px;font-weight:700}
@@ -13,53 +16,78 @@
   /* 단계 표시줄 */
   .barwrap{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;padding:0 16px 10px}
   #bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;background:#fff;border:2px solid var(--line);border-radius:999px;padding:5px;box-shadow:var(--shadow);user-select:none;-webkit-user-select:none;touch-action:none}
-  .st{font-family:inherit;font-size:1rem;padding:9px 16px;border:0;border-radius:999px;background:transparent;cursor:pointer;color:var(--ink)}
+  .st{font-family:inherit;font-size:1.1rem;padding:9px 16px;border:0;border-radius:999px;background:transparent;cursor:pointer;color:var(--ink)}
   .st.cur{background:var(--nb);color:#fff}
   .st.lock{color:#c9bfb3;cursor:default}
   .st .ck{color:#1b8f6a}.st.cur .ck{color:#fff}
   .side-btns{display:flex;gap:6px}
   .side-btns .btn{padding:8px 14px;font-size:.95rem}
   /* 본문 */
-  .stage{flex:1;display:flex;justify-content:center;padding:0 16px 110px}
-  .wrap{width:100%;max-width:1150px}
-  .grid2{display:grid;grid-template-columns:minmax(320px,1.15fr) minmax(280px,.85fr);gap:18px;align-items:start}
+  .stage{flex:1;display:flex;justify-content:center;padding:0 16px 20px}
+  .wrap{width:100%;max-width:1400px}
+  .grid2{display:grid;grid-template-columns:minmax(320px,1.2fr) minmax(280px,.8fr);gap:18px;align-items:start}
   .panel{background:#fff;border:2px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 22px}
-  .panel h2{margin:0 0 4px;font-size:1.45rem}
-  .guide{color:var(--mut);margin:0 0 12px;line-height:1.6;font-size:1.02rem}
+  .panel h2{margin:0 0 6px;font-size:1.75rem}
+  .guide{color:var(--mut);margin:0 0 12px;line-height:1.6;font-size:1.15rem}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .big{font-size:1.25rem;padding:14px 24px;border-radius:18px}
-  .pick{font-family:inherit;font-size:1.1rem;padding:10px 16px;border:2px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;color:var(--ink)}
+  .pick{font-family:inherit;font-size:1.25rem;padding:.5em .9em;border:2px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;color:var(--ink)}
   .pick.sel{background:var(--blue);border-color:var(--blue);color:#fff}
-  .num{font-family:inherit;font-size:1.5rem;width:120px;text-align:center;border:3px solid var(--line);border-radius:12px;padding:6px}
-  .num.sm{width:84px;font-size:1.3rem;padding:4px}
+  .num{font-family:inherit;font-size:1.6rem;width:6.5rem;text-align:center;border:3px solid var(--line);border-radius:12px;padding:6px}
+  .num.sm{width:4.6rem;font-size:1.35rem;padding:4px}
   .num:disabled{background:#f4fbf9;color:#1b8f6a;border-color:#b9ecdc}
   .q{border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin:10px 0;line-height:1.6}
   .q.ok{background:#f4fbf9;border-color:#b9ecdc}
-  .q .qt{font-size:1.15rem;font-weight:700}
-  .fb{min-height:1.3em;font-weight:700}
+  .q .qt{font-size:1.35rem;font-weight:700}
+  .fb{min-height:1.3em;font-weight:700;font-size:1.15rem}
   .fb.no{color:var(--coral)}.fb.yes{color:#1b8f6a}
-  .help{background:#fff7ea;border:2px dashed #ffe0a3;border-radius:12px;padding:8px 12px;margin-top:6px}
-  .note{background:#f6f1ff;border:2px solid #e2d4ff;border-radius:14px;padding:10px 14px;font-weight:700;margin:10px 0}
+  .help{background:#fff7ea;border:2px dashed #ffe0a3;border-radius:12px;padding:8px 12px;margin-top:6px;font-size:1.15rem}
+  .note{background:#f6f1ff;border:2px solid #e2d4ff;border-radius:14px;padding:10px 14px;font-weight:700;margin:10px 0;font-size:1.2rem}
   .next{display:flex;justify-content:flex-end;margin-top:14px}
-  .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-  .checks label{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:12px;font-size:1.1rem;cursor:pointer}
-  .checks input{width:24px;height:24px}
+  .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:12px}
+  .checks label{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:.7em;font-size:1.35rem;cursor:pointer}
+  .checks input{width:1.3em;height:1.3em}
   .checks label.on{background:#f4fbf9;border-color:#b9ecdc}
   .photo{aspect-ratio:4/3;width:100%;max-height:52vh;border-radius:16px;background:#f6efe4;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:1.2rem;overflow:hidden;border:2px solid var(--line)}
   .photo img{width:100%;height:100%;object-fit:contain}
-  .tval{font-size:2.4rem;font-weight:700;min-width:4.5ch;text-align:center;font-variant-numeric:tabular-nums}
+  .tval{font-size:3rem;font-weight:700;min-width:4.5ch;text-align:center;font-variant-numeric:tabular-nums}
   /* 코드 카드 */
   .code{background:#fbfaf7;border:2px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;display:inline-block;min-width:min(420px,100%)}
-  .blk{display:flex;align-items:center;gap:8px;color:#fff;font-weight:700;border-radius:10px;padding:8px 12px;margin:4px 0;width:max-content;max-width:100%;flex-wrap:wrap}
+  .blk{display:flex;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:1.2rem;border-radius:10px;padding:8px 12px;margin:4px 0;width:max-content;max-width:100%;flex-wrap:wrap}
   .blk.start{background:#3fb24f}.blk.rep{background:#4a90e2}.blk.fw{background:var(--nb)}.blk.tr{background:#1a9b94}
-  .blk .num,.blk select{font-family:inherit;font-size:1.2rem;border:0;border-radius:8px;padding:4px 6px;width:84px;text-align:center;color:var(--ink);background:#fff}
+  .blk .num,.blk select{font-family:inherit;font-size:1.2rem;border:0;border-radius:8px;padding:4px 6px;width:4.6rem;text-align:center;color:var(--ink);background:#fff}
   .inner{margin-left:26px;border-left:6px solid #4a90e2;padding-left:6px}
   .stars{display:flex;gap:10px;flex-wrap:wrap}
-  .stars .pick{font-size:1.15rem}
+  .stars .pick{font-size:1.3rem}
   #cv{width:100%;aspect-ratio:1/1;background:#fffdf8;border:2px solid var(--line);border-radius:16px;display:block}
   .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-  .subtabs .pick{font-size:1rem;padding:7px 14px}
+  .subtabs .pick{font-size:1.15rem;padding:.4em .9em}
   .subtabs .pick.lock{color:#c9bfb3;cursor:default}
+  /* ① 조립 */
+  .partgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:14px;margin-top:6px}
+  .partcard{display:flex;flex-direction:column;align-items:center;gap:6px;border:3px solid var(--line);border-radius:18px;padding:12px;cursor:pointer;font-size:1.25rem;text-align:center;background:#fff}
+  .partcard img{width:100%;height:6.5rem;object-fit:contain}
+  .partcard b{color:var(--nb);font-size:1.5rem}
+  .partcard.on{background:#f4fbf9;border-color:var(--mint)}
+  .partcard.on b::after{content:' ✓'}
+  .asmgrid{display:grid;grid-template-columns:minmax(300px,.8fr) minmax(360px,1.2fr);gap:18px;align-items:stretch}
+  .asmhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .asmhead h2{margin:0}
+  .asmno{display:inline-flex;width:2.6rem;height:2.6rem;border-radius:50%;background:var(--nb);color:#fff;font-weight:700;font-size:1.5rem;align-items:center;justify-content:center}
+  .asmof{color:var(--mut);margin-left:auto}
+  .asmparts{background:#e9f7f5;border-radius:16px;padding:10px 14px;margin:14px 0}
+  .asmpart{display:flex;align-items:center;gap:14px;margin:6px 0;font-size:1.25rem}
+  .asmpart img{width:6.5rem;height:5rem;object-fit:contain;background:#fff;border-radius:10px}
+  .asmpart b{color:var(--nb);font-size:1.4rem}
+  .asmlines{padding-left:1.4em;line-height:1.7;font-size:1.3rem;margin:8px 0}
+  .asmnav{justify-content:space-between}
+  .asmview{padding:8px;display:flex}
+  .asmslot,.asmhost{width:100%;height:100%;min-height:min(64vh,680px)}
+  .asmhost{position:relative;border-radius:14px;overflow:hidden}
+  .asmload{display:flex;align-items:center;justify-content:center;height:100%;color:var(--mut);font-size:1.2rem}
+  .asmcard{width:100%;height:auto;object-fit:contain;border-radius:14px}
+  .credit{text-align:center;color:var(--mut);font-size:.75rem;padding:0 0 90px}
+  @media (max-width:860px){.asmgrid{grid-template-columns:1fr}}
   /* 시작 화면 */
   .startbox{min-height:calc(100vh - 190px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5vh;text-align:center}
   .startbox h1{margin:0;font-size:clamp(2.2rem,5vw,3.6rem)}
@@ -71,7 +99,7 @@
   .startbtn{font-size:clamp(1.5rem,3vw,2.2rem);padding:18px 64px;border-radius:24px}
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
   .card{background:#fff;border:3px solid var(--line);border-radius:24px;padding:22px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;box-shadow:var(--shadow)}
-  .card h3{margin:6px 0;font-size:1.4rem}.card p{margin:0;color:var(--mut)}
+  .card h3{margin:6px 0;font-size:1.6rem}.card p{margin:0;color:var(--mut);font-size:1.1rem}
   /* 멈춤 버튼 */
   #stopBig{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;font-size:1.6rem;padding:18px 48px;border-radius:24px;background:var(--coral);color:#fff;border:0;font-family:inherit;font-weight:700;box-shadow:0 10px 30px rgba(200,60,70,.35);cursor:pointer}
   .rec td,.rec th{padding:6px 10px;border-bottom:2px solid var(--line);text-align:left}
@@ -99,6 +127,7 @@
     </div>
   </div>
   <div class="stage"><div class="wrap" id="view"></div></div>
+  <div class="credit">부품 모델: LDraw Parts Library (ldraw.org), CC BY 2.0 · three.js (MIT)</div>
   <button id="stopBig" class="hidden">■ 멈춤</button>
 
   <div class="modal hidden" id="recModal">
@@ -113,6 +142,7 @@
 
 <script src="js/neobot.js"></script>
 <script src="js/angle-problems.js"></script>
+<script src="js/assembly-steps.js"></script>
 <script src="js/mission.js"></script>
 </body>
 </html>

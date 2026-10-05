@@ -1,0 +1,32 @@
+0 Neobot polygon robot v2 (skid on motors)
+0 Name: robot.ldr
+0 Author: neobot-class
+1 0 -60 72 40 -1 0 0 0 1 0 0 0 -1 nb_motor.dat
+1 0 -20 88 20 1 0 0 0 1 0 0 0 1 2780.dat
+1 0 -20 88 0 1 0 0 0 1 0 0 0 1 2780.dat
+0 STEP
+1 14 -10 88 -120 0 1 0 1 0 0 0 0 -1 32009.dat
+0 STEP
+1 0 0 88 -40 1 0 0 0 1 0 0 0 1 2780.dat
+1 0 0 88 -80 1 0 0 0 1 0 0 0 1 2780.dat
+0 STEP
+1 14 10 88 -120 0 1 0 1 0 0 0 0 -1 32009.dat
+0 STEP
+1 0 60 72 40 -1 0 0 0 1 0 0 0 -1 nb_motor.dat
+1 0 20 88 20 1 0 0 0 1 0 0 0 1 2780.dat
+1 0 20 88 0 1 0 0 0 1 0 0 0 1 2780.dat
+0 STEP
+1 151 0 0 0 1 0 0 0 1 0 0 0 1 nb_controller.dat
+0 STEP
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 nb_cable_L.dat
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 nb_cable_R.dat
+0 STEP
+1 71 -90 108 20 1 0 0 0 1 0 0 0 1 3706.dat
+1 71 90 108 20 1 0 0 0 1 0 0 0 1 3706.dat
+0 STEP
+1 0 -104 108 20 0 -1 0 1 0 0 0 0 1 nb_wheel_big.dat
+1 0 104 108 20 0 1 0 -1 0 0 0 0 1 nb_wheel_big.dat
+0 STEP
+1 16 -80 0 60 1 0 0 0 1 0 0 0 1 nb_led.dat
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 nb_cable_LED.dat
+0 STEP
