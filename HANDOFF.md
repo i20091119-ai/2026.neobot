@@ -131,6 +131,7 @@ portable/         폴더판 실행 스크립트(Run.bat, Make-Desktop-Shortcut.b
   - 똑바로 가기(2026.10.5. 실물: 두 모터 힘 차이로 한쪽으로 휨): 앞으로 3초 → [왼쪽/오른쪽 조금(±0.2)·많이(±0.6)] → 빠른 쪽 바퀴를 늦춤(trim, 속도 5 기준, 다른 속도는 비례, ±3까지). 모터 속도가 정수라 32ms 패킷마다 s·s−1을 섞어 평균을 맞춤. ③·④ 별점 ★★ 이하이면 [똑바로 가기 다시 맞추기] 버튼
   - 보정값 localStorage `nb-motor` {flipL, flipR, swap, trim}, `neobot.js` 송신 패킷(DCL·DCR)에 적용 → **주행·블록코딩 등 모든 화면에 적용**
   - 기록 [다음 모둠 시작]은 보정값을 지우지 않음(같은 노트북 = 같은 로봇 가정)
+- 폴더판 처음 설치: `portable/처음설치.bat` = 드라이버 zip 풀기(PowerShell Expand-Archive) → `[Install]dongle driver.exe` 실행(관리자 창) → 바탕화면 아이콘. 윈도우 실물 미확인(2026.10.6.)
 - 폴더판: `portable/Run.bat`에 `--allow-file-access-from-files` 추가. 이 플래그로 모듈·XHR은 되지만 fetch()는 file://에서 막힘 → `assembly-viewer.js`가 file://일 때 LDraw 파일을 동기 XHR로 읽어 blob 주소로 바꿔 줌(2026.10.6. 확인: Run.bat 플래그면 3D 표시, index.html 직접 열기면 단계 그림으로 대체)
 
 ## 9. 시험 방법

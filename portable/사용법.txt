@@ -1,9 +1,12 @@
 ﻿네오봇 수학SW체험 — 사용법 (폴더판, 2026.10.6.)
 
-[처음 한 번]
+[처음 한 번] (인터넷 필요 없음)
 1. 이 폴더를 노트북 아무 곳에나 복사 (예: 문서, 바탕화면)
-2. 동글 드라이버 설치: [NEOPIA]dongle driver.zip 안의 [Install]dongle driver.exe 실행
-3. Make-Desktop-Shortcut.bat 더블클릭 → 바탕화면에 '네오봇 SW체험' 아이콘 생성
+2. 처음설치.bat 더블클릭
+   → 동글 드라이버 압축 풀기 → 설치(관리자 창에서 [예], 설치 창에서 다음·마침) → 바탕화면 '네오봇 SW체험' 아이콘
+   - 관리자 권한이 막힌 노트북은 드라이버 설치가 안 됨 → 정보 담당 선생님께 부탁
+   - 처음설치.bat이 안 되면 직접: [NEOPIA]dongle driver.zip 압축 풀기 → [Install]dongle driver.exe 실행 → Make-Desktop-Shortcut.bat 실행
+3. 확인: 동글 꽂기 → 아이콘 실행 → [로봇 연결] 목록에 CP210x가 보이면 설치 끝
 
 [매번]
 1. 동글 꽂기 → 로봇 전원 켜기(① Coding 모드)
