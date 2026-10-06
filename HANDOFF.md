@@ -22,6 +22,8 @@
 | GitHub 저장소 | `https://github.com/i20091119-ai/2026.neobot` — `main`에 업로드 완료(2026.10.1.) |
 | GitHub Pages | `https://i20091119-ai.github.io/2026.neobot/` — 실물 연결 확인 |
 | 폴더판(오프라인용) | 2026.10.6. 최신판 zip 새로 만듦(3D 조립도·미션 포함, `portable/사용법.txt` 갱신) — 아래는 처음 판 기록 |
+| 폴더판 내려받기 | `download/neobot-folder.zip` (20261006c판) — 첫 화면 '폴더판 내려받기' 링크. 앱을 고치면 zip도 다시 만들어 교체 |
+| 연수 발표 자료 | 캔바 '정다각형 미션 연수'(17장). 캡처·QR 원본 `docs/slides/` |
 | 폴더판(처음 판) | `C:\Users\PC\Desktop\네오봇\네오봇 수학SW체험\` (+ zip) — Run.bat로 엣지 앱 창 실행 |
 
 ## 3. 바로 할 일
