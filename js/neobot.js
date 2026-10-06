@@ -220,8 +220,37 @@
 
   // ---- 공통 연결 칩 UI ----
   // <button id="nbConn"> 하나만 있으면 상태 표시 + 클릭 연결/해제
+  // 내 로봇 확인: 삐 소리 3번 + LED(OUT1~3) 깜박임 → 동글과 로봇 짝이 엇갈렸는지 바로 확인
+  let identifying = false;
+  async function identify() {
+    if (!connected || identifying) return;
+    identifying = true;
+    const keep = { OUT1: out.OUT1, OUT2: out.OUT2, OUT3: out.OUT3, SND: out.SND };
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+    try {
+      for (let i = 0; i < 3; i++) {
+        out.OUT1 = out.OUT2 = out.OUT3 = 255; out.SND = noteValue(1, 4);
+        await wait(220);
+        out.OUT1 = out.OUT2 = out.OUT3 = 0; out.SND = 0;
+        await wait(160);
+      }
+    } finally {
+      Object.assign(out, keep);
+      identifying = false;
+    }
+  }
+
   function mountConnectButton(btn, opts = {}) {
+    // 연결 버튼 옆에 '내 로봇 확인' 버튼(연결됐을 때만 보임)
+    const idBtn = document.createElement('button');
+    idBtn.className = 'conn idbtn';
+    idBtn.textContent = '🔔 내 로봇 확인';
+    idBtn.title = '로봇이 삐 소리를 3번 내고 불이 깜박여요. 내 로봇이 아니면 선생님 부르기';
+    idBtn.style.display = 'none';
+    idBtn.addEventListener('click', identify);
+    btn.insertAdjacentElement('beforebegin', idBtn);
     const render = () => {
+      idBtn.style.display = connected ? '' : 'none';
       const s = status();
       btn.classList.toggle('ok', s.connected && s.receiving);
       btn.classList.toggle('warn', s.connected && !s.receiving);
@@ -232,7 +261,7 @@
     btn.addEventListener('click', async () => {
       try {
         if (connected) await disconnect('사용자 해제');
-        else await connect();
+        else { await connect(); render(); setTimeout(identify, 400); }   // 처음 연결하면 바로 내 로봇 확인
       } catch (e) { (opts.onError || alert)(e.message || String(e)); }
       render();
     });
@@ -251,7 +280,7 @@
 
   window.Neobot = {
     setSignals, get port() { return port; }, get motorCal() { return { ...cal }; }, setMotorCal,
-    out, sensor, on, connect, autoConnect, disconnect, status, stopAll, resetOutputs,
+    out, sensor, on, connect, autoConnect, disconnect, status, stopAll, resetOutputs, identify,
     setMotors, motorByte, noteValue, buildPacket, parseRx, mountConnectButton,
     get connected() { return connected; },
   };

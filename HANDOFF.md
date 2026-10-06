@@ -21,7 +21,8 @@
 | 서보 '각도 바꾸기' 속도 선택지 | 엔트리와 반대였던 버그 수정 완료(실물 미확인, 키트에 서보 없음) |
 | GitHub 저장소 | `https://github.com/i20091119-ai/2026.neobot` — `main`에 업로드 완료(2026.10.1.) |
 | GitHub Pages | `https://i20091119-ai.github.io/2026.neobot/` — 실물 연결 확인 |
-| 폴더판(오프라인용) | `C:\Users\PC\Desktop\네오봇\네오봇 수학SW체험\` (+ zip) — Run.bat로 엣지 앱 창 실행 |
+| 폴더판(오프라인용) | 2026.10.6. 최신판 zip 새로 만듦(3D 조립도·미션 포함, `portable/사용법.txt` 갱신) — 아래는 처음 판 기록 |
+| 폴더판(처음 판) | `C:\Users\PC\Desktop\네오봇\네오봇 수학SW체험\` (+ zip) — Run.bat로 엣지 앱 창 실행 |
 
 ## 3. 바로 할 일
 1. ~~저장소 push~~ / ~~GitHub Pages~~ / ~~Pages에서 로봇 연결~~ — 완료
@@ -112,6 +113,8 @@ portable/         폴더판 실행 스크립트(Run.bat, Make-Desktop-Shortcut.b
 
 - 즉시 송신(2026.10.5.): `Neobot.setMotors` 값이 바뀌면 32ms 주기를 기다리지 않고 바로 송신(`sendNow`, 보내는 중이면 끝나자마자). 전에는 출발·정지가 최대 32ms씩 늦어 한 번 돌 때 각도가 최대 약 7° 들쭉날쭉. 가짜 포트 기준 시퀀스 오차 30~46ms → 4ms 이하. 블루투스 지연 편차·바닥·배터리·받침 마찰로 인한 차이는 남음
 
+- 내 로봇 확인(2026.10.6.): 연결 버튼 옆 [🔔 내 로봇 확인] → 삐 3번 + OUT1~3 깜박임(`Neobot.identify`), [로봇 연결]로 처음 연결할 때 자동 1회. 교실 여러 대에서 동글-로봇 짝 엇갈림 확인용. 모든 화면(mountConnectButton)
+
 ## 8-3. 3D 조립도 (`assembly/`, 2026.10.5. 이식) — 자세한 내용 `assembly/HANDOFF_조립도.md`
 - 로봇 v2: 큰 바퀴 2 차동 구동, 노란 굽은1×11 2개를 모터 안쪽에 달아 앞쪽 받침, LED 블록(OUT3), 번호판 없음
   - 2026.10.5. 수정판: **뒤 받침(초록 블록 2×10)** 추가 — 두 모터 바닥 뒤쪽에 끼워 뒤로 넘어짐 방지(실물 확인), 6단계로 들어가 전체 11단계
@@ -128,7 +131,7 @@ portable/         폴더판 실행 스크립트(Run.bat, Make-Desktop-Shortcut.b
   - 똑바로 가기(2026.10.5. 실물: 두 모터 힘 차이로 한쪽으로 휨): 앞으로 3초 → [왼쪽/오른쪽 조금(±0.2)·많이(±0.6)] → 빠른 쪽 바퀴를 늦춤(trim, 속도 5 기준, 다른 속도는 비례, ±3까지). 모터 속도가 정수라 32ms 패킷마다 s·s−1을 섞어 평균을 맞춤. ③·④ 별점 ★★ 이하이면 [똑바로 가기 다시 맞추기] 버튼
   - 보정값 localStorage `nb-motor` {flipL, flipR, swap, trim}, `neobot.js` 송신 패킷(DCL·DCR)에 적용 → **주행·블록코딩 등 모든 화면에 적용**
   - 기록 [다음 모둠 시작]은 보정값을 지우지 않음(같은 노트북 = 같은 로봇 가정)
-- 폴더판: `portable/Run.bat`에 `--allow-file-access-from-files` 추가(3D 조립도 fetch용)
+- 폴더판: `portable/Run.bat`에 `--allow-file-access-from-files` 추가. 이 플래그로 모듈·XHR은 되지만 fetch()는 file://에서 막힘 → `assembly-viewer.js`가 file://일 때 LDraw 파일을 동기 XHR로 읽어 blob 주소로 바꿔 줌(2026.10.6. 확인: Run.bat 플래그면 3D 표시, index.html 직접 열기면 단계 그림으로 대체)
 
 ## 9. 시험 방법
 - 로컬: `python3 -m http.server` 후 Playwright(크로미움)

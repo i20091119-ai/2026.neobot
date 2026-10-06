@@ -30,6 +30,22 @@ export async function createAssemblyViewer(container, opts = {}) {
   container.appendChild(labelLayer);
 
   const loader = new LDrawLoader();
+  // 폴더판(file://): 크롬은 file://에서 fetch()를 막음(--allow-file-access-from-files로도 안 됨) → XHR로 읽어 blob 주소로 바꿔 줌
+  //   없는 부품 경로(로더가 parts/ → p/ 순서로 찾음)는 XHR 실패 → 원래 주소 그대로 → 로더가 다음 경로를 찾음
+  if (location.protocol === 'file:') {
+    const cache = new Map();
+    loader.manager.setURLModifier((u) => {
+      if (/^(blob|data):/.test(u)) return u;
+      if (cache.has(u)) return cache.get(u);
+      let out = u;
+      try {
+        const x = new XMLHttpRequest(); x.open('GET', u, false); x.send();
+        if (x.responseText) out = URL.createObjectURL(new Blob([x.responseText], { type: 'text/plain' }));
+      } catch (e) { /* 없는 파일 */ }
+      cache.set(u, out);
+      return out;
+    });
+  }
   loader.setPartsLibraryPath(base + 'ldraw/lib/');
   await loader.preloadMaterials(base + 'ldraw/lib/colors/ldcfgalt.ldr');
   const model = await loader.loadAsync(base + data.model);
