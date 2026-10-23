@@ -47,12 +47,16 @@
   let st = fresh();
 
   const round2 = (v) => Math.round(v * 100) / 100;
-  const fmtT = (v) => (+v).toFixed(1);
+  // 한 바퀴 시간은 0.01초 단위까지 — 3.30 → '3.3', 3.35 → '3.35'
+  const fmtT = (v) => (+v).toFixed(2).replace(/(\.\d)0$/, '$1');
   const num = (s) => parseFloat(String(s).replace(',', '.').trim());
-  const clampT = (v) => Math.max(T_MIN, Math.min(T_MAX, Math.round(v * 10) / 10));
+  const clampT = (v) => Math.max(T_MIN, Math.min(T_MAX, Math.round(v * 100) / 100));
   const newQ = () => ({ ok: false, w: 0, help: false, rev: false, val: '' });
   function sh(id) {
-    if (!st.shapes[id]) st.shapes[id] = { q: { angle: newQ(), div: newQ(), time: newQ() }, rep: '', tt: '', L: 1.0, ran: false, star: 0, Tused: st.T };
+    if (!st.shapes[id]) st.shapes[id] = { q: { sum: newQ(), angle: newQ(), div: newQ(), time: newQ() }, rep: '', tt: '', L: 1.0, ran: false, star: 0, Tused: st.T };
+    // 예전 기록(합 문제 없던 판): 도는 각을 이미 풀었으면 합 문제도 푼 것으로
+    const q = st.shapes[id].q;
+    if (!q.sum) q.sum = q.angle.ok ? { ...newQ(), ok: true, val: String(SHAPES[id].turn * SHAPES[id].n) } : newQ();
     return st.shapes[id];
   }
   function m1q(k) { if (!st.m1[k]) st.m1[k] = newQ(); return st.m1[k]; }
@@ -191,8 +195,10 @@
       return { Q: m1q(b), ans: M[b][0], tol: 0, help: M[b][1], show: M[b][0] };
     }
     const c = SHAPES[a], s = sh(a), laps = c.laps || 1;
+    if (b === 'sum') return { Q: s.q.sum, ans: c.turn * c.n, tol: 0, show: c.turn * c.n + '°',
+      help: laps > 1 ? `별은 두 바퀴 돌아 출발점으로 와요 → 360° × 2 = 720°` : `한 바퀴 돌아 처음 방향으로 오면 → 360°` };
     if (b === 'angle') return { Q: s.q.angle, ans: c.turn, tol: 0, show: c.turn + '°',
-      help: laps > 1 ? `별은 두 바퀴(720°) 돌아요 → 720° ÷ 꼭짓점 ${c.n}개 = ${c.turn}°` : `한 바퀴 360° ÷ 꼭짓점 ${c.n}개 = ${c.turn}°` };
+      help: `도는 각 합 ${c.turn * c.n}° ÷ 꼭짓점 ${c.n}개 = ${c.turn}°` };
     if (b === 'div') return { Q: s.q.div, ans: c.n, tol: 0, show: c.n, help: `꼭짓점 ${c.n}개에서 나눠서 돌아요 → ÷ ${c.n}` };
     const ex = turnTime(a);
     return { Q: s.q.time, ans: ex, tol: TIME_TOL, show: round2(ex) + '초',
@@ -233,10 +239,36 @@
     else if (String(s.tt).trim() !== '' && !ttOk) hint = '도는 시간 = 위에서 구한 값';
     return { ready: repOk && ttOk, hint };
   }
+  // 꼭짓점 보조선 그림: 들어온 변을 점선으로 늘려 '도는 각(외각)'과 '안쪽 각(내각)'을 함께 보여 줌(2026.10.23. 현장 의견)
+  function angleFig(c, solved) {
+    const t = c.turn, V = [150, 95], L = 95, r1 = 34, r2 = 52, rad = (d) => d * Math.PI / 180;
+    const P = (a, r) => [V[0] + r * Math.cos(rad(a)), V[1] + r * Math.sin(rad(a))].map(v => v.toFixed(1)).join(' ');
+    const arc = (a0, a1, r) => `M ${P(a0, r)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${P(a1, r)}`;
+    const lab = (a, r) => P(a, r).split(' ');
+    const [ex, ey] = lab(t / 2, r2 + 40), [ix, iy] = lab((t + 180) / 2, r1 + 24);
+    const inner = 180 - t;
+    return `<svg class="afig" viewBox="0 45 320 165" role="img" aria-label="꼭짓점에서 도는 각과 안쪽 각">
+      <line x1="20" y1="${V[1]}" x2="${V[0]}" y2="${V[1]}" stroke="#1fb5ad" stroke-width="6" stroke-linecap="round"/>
+      <line x1="${V[0]}" y1="${V[1]}" x2="${P(t, L).split(' ')[0]}" y2="${P(t, L).split(' ')[1]}" stroke="#1fb5ad" stroke-width="6" stroke-linecap="round"/>
+      <line x1="${V[0]}" y1="${V[1]}" x2="305" y2="${V[1]}" stroke="#9b8f86" stroke-width="3" stroke-dasharray="8 7"/>
+      <path d="${arc(t, 180, r1)}" fill="none" stroke="#9b8f86" stroke-width="3"/>
+      <path d="${arc(0, t, r2)}" fill="none" stroke="#ff7a86" stroke-width="5"/>
+      <polygon points="58,${V[1] - 9} 76,${V[1]} 58,${V[1] + 9}" fill="#1fb5ad"/>
+      <circle cx="${V[0]}" cy="${V[1]}" r="6" fill="#3a3230"/>
+      <text x="${ex}" y="${ey}" text-anchor="middle" dominant-baseline="middle" fill="#ff7a86" font-size="17" font-weight="700">도는 각 ${solved ? t + '°' : '?'}</text>
+      <text x="${ix}" y="${iy}" text-anchor="middle" dominant-baseline="middle" fill="#7b6f66" font-size="14">안쪽 각${solved ? ' ' + inner + '°' : ''}</text>
+      <text x="300" y="${V[1] - 12}" text-anchor="end" fill="#9b8f86" font-size="13">그대로 가면</text>
+    </svg>
+    <p class="guide" style="margin:2px 0 8px">점선 = 그대로 가던 방향 · 로봇은 점선에서 <b style="color:#ff7a86">빨간 각</b>만큼 돌아요${solved ? ` · 안쪽 각 + 도는 각 = 180°` : ''}</p>`;
+  }
   function shapeHTML(id) {
     const c = SHAPES[id], s = sh(id);
     syncT(id);
     let h = `<h2>${c.name}</h2><p class="guide">로봇은 꼭짓점에서 <b>오른쪽</b>으로 돌아요.</p>`;
+    h += angleFig(c, s.q.angle.ok);
+    // 먼저 '도는 각을 모두 더하면?'(한 바퀴 360°) → 그다음 꼭짓점 하나의 도는 각(2026.10.23. 현장 의견)
+    h += qHTML(id + '.sum', `${c.name}을 ${(c.laps || 1) > 1 ? '끝까지 그리고' : '한 바퀴 돌아'} 출발점으로 오면, 도는 각을 모두 더하면?`, '°');
+    if (!s.q.sum.ok) return h;
     h += qHTML(id + '.angle', `${c.name} 꼭짓점에서 로봇이 도는 각은?`, '°');
     if (!s.q.angle.ok) return h;
     // 소수 나눗셈은 초등에 어려움 → 학생은 '÷ 몇'까지만 답하고 시간은 앱이 계산해 보여 줌(2026.10.5.)
@@ -359,9 +391,9 @@
     return `<div class="panel" style="max-width:820px;margin:0 auto"><h2>② 한 바퀴 시간</h2>
       <p class="guide">출발 표시에 로봇 앞(노란 받침)을 맞추고 [제자리 한 바퀴]</p>
       <div class="row" style="justify-content:center">
-        <button class="btn ghost" data-act="adj" data-v="-0.5">−0.5</button><button class="btn ghost" data-act="adj" data-v="-0.1">−0.1</button>
+        <button class="btn ghost" data-act="adj" data-v="-0.5">−0.5</button><button class="btn ghost" data-act="adj" data-v="-0.1">−0.1</button><button class="btn ghost" data-act="adj" data-v="-0.01">−0.01</button>
         <span class="tval">${fmtT(st.Ttry)}</span>초
-        <button class="btn ghost" data-act="adj" data-v="0.1">+0.1</button><button class="btn ghost" data-act="adj" data-v="0.5">+0.5</button></div>
+        <button class="btn ghost" data-act="adj" data-v="0.01">+0.01</button><button class="btn ghost" data-act="adj" data-v="0.1">+0.1</button><button class="btn ghost" data-act="adj" data-v="0.5">+0.5</button></div>
       <div class="row" style="justify-content:center"><button class="btn mint big" data-act="spin" ${busy ? 'disabled' : ''}>제자리 한 바퀴 ↻</button></div>
       ${st.spun ? `<div class="q" style="text-align:center"><div class="qt">어땠나요?</div><div class="row" style="justify-content:center">
         <button class="pick" data-act="judge" data-v="less">덜 돎</button><button class="pick" data-act="judge" data-v="ok">딱 맞음</button>
