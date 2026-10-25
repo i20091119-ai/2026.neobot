@@ -4,6 +4,8 @@ on:
   push:
     paths: ['android/**', '.github/workflows/android.yml', 'js/**', '*.html', 'css/**', 'assembly/**', 'assets/**']
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,3 +21,13 @@ jobs:
         run: cp android/app/build/outputs/apk/release/app-release.apk neobot-tablet.apk
       - uses: actions/upload-artifact@v4
         with: { name: neobot-tablet-apk, path: neobot-tablet.apk, retention-days: 30 }
+      # 작업 브랜치(claude/…)에서는 APK를 download/ 에 커밋 → 병합하면 사이트에서 바로 내려받기
+      - name: APK를 download/ 에 올리기
+        if: github.event_name == 'push' && startsWith(github.ref_name, 'claude/')
+        run: |
+          mkdir -p download && cp neobot-tablet.apk download/neobot-tablet.apk
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add download/neobot-tablet.apk
+          git commit -m "태블릿 APK 빌드 결과" || exit 0
+          git push
