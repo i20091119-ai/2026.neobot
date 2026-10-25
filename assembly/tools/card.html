@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<!-- 인쇄·대체용 단계 그림(cards/stepNN.png) 틀 — make_cards.js가 ?step=N 으로 열어 1600×1000 캡처 -->
+<!-- ?thumb=motor 이면 부품 하나만(thumbs/motor.png용, 228×200) -->
+<title>조립도 카드</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap">
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.min.js"}}</script>
+<style>
+  html,body{margin:0;background:#fff;font-family:'Noto Sans KR',sans-serif;color:#222}
+  #card{position:relative;width:1600px;height:1000px;overflow:hidden}
+  .bar{position:absolute;left:0;top:0;right:0;height:12px;background:#16a3a3}
+  .no{position:absolute;left:40px;top:40px;width:100px;height:100px;border-radius:50%;background:#16a3a3;color:#fff;font-size:52px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  h1{position:absolute;left:170px;top:52px;margin:0;font-size:50px;font-weight:900}
+  .parts{position:absolute;left:40px;top:170px;width:520px;box-sizing:border-box;background:#e8f5f5;border-radius:24px;padding:24px 26px}
+  .part{display:flex;align-items:center;gap:28px;margin:4px 0 16px}
+  .part img{width:156px;height:136px;object-fit:contain;background:#fff}
+  .part .nm{font-size:32px;font-weight:700} .part b{display:block;color:#16a3a3;font-size:40px;font-weight:700;margin-top:6px}
+  .none{font-size:28px;color:#888}
+  ol{position:absolute;left:40px;width:540px;margin:0;padding:0;list-style:none;counter-reset:n}
+  ol li{word-break:keep-all;counter-increment:n;position:relative;padding-left:50px;font-size:30px;line-height:1.5;margin-bottom:16px}
+  ol li::before{content:counter(n);position:absolute;left:10px;color:#16a3a3;font-weight:700}
+  #view{position:absolute;left:600px;top:110px;width:1000px;height:890px}
+  #thumb{width:228px;height:200px;position:relative}
+</style></head>
+<body>
+<div id="card"><div class="bar"></div><div class="no" id="no"></div><h1 id="title"></h1>
+  <div class="parts" id="parts"></div><ol id="lines"></ol><div id="view"></div></div>
+<script type="module">
+import { createAssemblyViewer } from '../assembly-viewer.js';
+const q = new URLSearchParams(location.search), $ = (id) => document.getElementById(id);
+const thumb = q.get('thumb');
+if (thumb) {
+  // 부품 하나: 임시 모델을 data URL 대신 steps 객체로 넘김(모델 파일은 tools/thumb_<key>.ldr)
+  document.body.innerHTML = '<div id="thumb"></div>';
+  const v = await createAssemblyViewer($('thumb'), { base: '../', steps: { model: 'tools/thumb_' + thumb + '.ldr',
+    steps: [{ title: '', parts: [], lines: [], view: { az: 35, el: 22, zoom: 1.05 }, explode: [0, 0, 0], fade: false }] } });
+  v.setStep(0);
+} else {
+  const i = +(q.get('step') || 1) - 1;
+  const data = await (await fetch('../steps.json')).json();
+  const st = data.steps[i];
+  await document.fonts.ready;
+  $('no').textContent = i + 1; $('title').textContent = st.title;
+  $('parts').innerHTML = st.parts.length
+    ? st.parts.map(p => `<div class="part"><img src="../thumbs/${p.key}.png"><div><div class="nm">${p.name}</div><b>× ${p.count}</b></div></div>`).join('')
+    : '<div class="none">새 부품 없음</div>';
+  $('lines').innerHTML = st.lines.map(l => `<li>${l}</li>`).join('');
+  $('lines').style.top = ($('parts').offsetTop + $('parts').offsetHeight + 40) + 'px';
+  const v = await createAssemblyViewer($('view'), { base: '../', steps: data });
+  v.setStep(i);
+}
+setTimeout(() => { window.READY = true; }, 1500);
+</script></body></html>

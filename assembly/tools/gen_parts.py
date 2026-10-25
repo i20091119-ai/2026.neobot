@@ -78,7 +78,7 @@ for x in (-30, -10, 10, 30):
 AXLE_Z, AXLE_Y = 20, 36
 for sx in (-40.3, 40.3):
     for z in (-20, 0, 20, 40):
-        rows = (56,) if z == -20 else HOLE_ROWS
+        rows = (16,) if z == -20 else HOLE_ROWS   # 4구멍 줄은 맨 위(실물 확인 2026.10.25.)
         for y in rows:
             if (z, y) == (AXLE_Z, AXLE_Y):
                 m.append(disc_x(YELLOW, sx, y, z, 7))

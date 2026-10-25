@@ -159,3 +159,4 @@ portable/         폴더판 실행 스크립트(Run.bat, Make-Desktop-Shortcut.b
 - 참고 원본: `https://github.com/i20091119-ai/2026newaltinopro1` (알티노 앱 — 에너지 게임 원형 `webapp/js/tag.js`)
 - 2026.10.23.: 한 바퀴 시간 ±0.01 버튼 추가(0.01초 단위 저장·표시). 도형 미션에 꼭짓점 보조선 그림(점선=그대로 가는 방향, 빨간 호=도는 각, 회색 호=안쪽 각) + '도는 각을 모두 더하면?'(360°, 별 720°) 문제를 '한 번 도는 각' 앞에 추가. 설치판 zip도 같은 내용으로 교체
 - 2026.10.25.: 안드로이드 태블릿판 시작(`android/`). WebView + CP210x 직접 드라이버 + navigator.serial 대체(android-serial.js). 가짜 브리지로 웹앱 연결·송수신·분리 시험 통과. APK 빌드는 이 환경에서 dl.google.com(안드로이드 SDK) 차단으로 아직 못 함. 실물 태블릿·동글 시험 전
+- 2026.10.25.: 모터 블록 옆 구멍 수정(실물: 맨 위 줄 4구멍, 아래 두 줄 3구멍 — 이전엔 맨 아래가 4구멍). `assembly/tools/gen_parts.py`·`nb_motor.dat` 수정. 단계 그림·모터 썸네일은 `node assembly/tools/make_cards.js`로 다시 만듦(정적 서버 필요). 설치판 zip도 교체. 태블릿 앱: 로봇이 태블릿 블루투스에 안 보임 → 동글+OTG 젠더 필요
