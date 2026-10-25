@@ -1,0 +1,10 @@
+// 네오봇 수학SW체험 — 안드로이드 태블릿판(웹앱 + USB 동글 연결)
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories { google(); mavenCentral() }
+}
+rootProject.name = 'neobot-tablet'
+include ':app'

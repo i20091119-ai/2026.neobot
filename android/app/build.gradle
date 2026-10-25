@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'kr.gnmc.neobot'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'kr.gnmc.neobot'
+        minSdk 24          // 안드로이드 7.0 이상 (USB 호스트 + 최신 WebView)
+        targetSdk 34
+        versionCode 1
+        versionName '2026.10'
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.debug }   // 학교 배포용: 디버그 키로 서명(스토어 배포 아님)
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    sourceSets { main { assets.srcDirs = ["$buildDir/webassets"] } }
+}
+
+// 저장소의 웹앱 파일을 그대로 앱 안(assets/www)에 넣음 — 웹앱을 고치면 다시 빌드만 하면 됨
+def webRoot = file('../..')
+task copyWeb(type: Copy) {
+    from(webRoot) {
+        include '*.html', 'css/**', 'js/**', 'assets/**', 'fonts/**', 'sounds/**', 'vendor/**', 'assembly/**', 'neobot.ico'
+        exclude 'assembly/tools/**', '**/*.md'
+    }
+    from('src/main/web') { include 'android-serial.js' }
+    into "$buildDir/webassets/www"
+}
+preBuild.dependsOn copyWeb
