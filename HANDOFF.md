@@ -158,3 +158,4 @@ portable/         폴더판 실행 스크립트(Run.bat, Make-Desktop-Shortcut.b
 - `C:\Users\PC\Desktop\네오봇\` — 동글 드라이버 zip, 네오봇에듀SMART 교과서별 자료 zip 2개, 이 웹앱 폴더, 폴더판, PowerShell 조종기(`조종기\`)
 - 참고 원본: `https://github.com/i20091119-ai/2026newaltinopro1` (알티노 앱 — 에너지 게임 원형 `webapp/js/tag.js`)
 - 2026.10.23.: 한 바퀴 시간 ±0.01 버튼 추가(0.01초 단위 저장·표시). 도형 미션에 꼭짓점 보조선 그림(점선=그대로 가는 방향, 빨간 호=도는 각, 회색 호=안쪽 각) + '도는 각을 모두 더하면?'(360°, 별 720°) 문제를 '한 번 도는 각' 앞에 추가. 설치판 zip도 같은 내용으로 교체
+- 2026.10.25.: 안드로이드 태블릿판 시작(`android/`). WebView + CP210x 직접 드라이버 + navigator.serial 대체(android-serial.js). 가짜 브리지로 웹앱 연결·송수신·분리 시험 통과. APK 빌드는 이 환경에서 dl.google.com(안드로이드 SDK) 차단으로 아직 못 함. 실물 태블릿·동글 시험 전
