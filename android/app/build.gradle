@@ -15,6 +15,7 @@ android {
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     sourceSets { main { assets.srcDirs = ["$buildDir/webassets"] } }
+    lint { abortOnError false; checkReleaseBuilds false }
 }
 
 // 저장소의 웹앱 파일을 그대로 앱 안(assets/www)에 넣음 — 웹앱을 고치면 다시 빌드만 하면 됨

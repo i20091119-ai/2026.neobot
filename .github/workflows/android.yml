@@ -1,0 +1,21 @@
+# 안드로이드 태블릿판 APK 빌드 — android/ 이 바뀌거나 수동 실행 시
+name: android-apk
+on:
+  push:
+    paths: ['android/**', '.github/workflows/android.yml', 'js/**', '*.html', 'css/**', 'assembly/**', 'assets/**']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.9' }
+      - name: APK 빌드
+        run: gradle -p android assembleRelease --no-daemon
+      - name: 이름 정리
+        run: cp android/app/build/outputs/apk/release/app-release.apk neobot-tablet.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: neobot-tablet-apk, path: neobot-tablet.apk, retention-days: 30 }
